@@ -1,0 +1,90 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\GuruController;
+use App\Http\Controllers\Admin\MapelController;
+use App\Http\Controllers\Admin\RuangController;
+use App\Http\Controllers\Admin\KelasController;
+use App\Http\Controllers\Admin\WaktuController;
+use App\Http\Controllers\Admin\GuruMapelController;
+use App\Http\Controllers\Admin\JadwalController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+// Route::get('/', function () {
+//     return view('admin');
+// });
+
+Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
+
+Route::group([], function () {
+    Route::get('/guru', [GuruController::class, 'index'])->name('guru');
+    Route::get('/guru/create', [GuruController::class, 'create'])->name('guru.create');
+    Route::post('/guru/store', [GuruController::class, 'store'])->name('guru.store');
+    Route::get('/guru/edit/{id}', [GuruController::class, 'edit'])->name('guru.edit');
+    Route::put('/guru/update/{id}', [GuruController::class, 'update'])->name('guru.update');
+    Route::delete('/guru/delete/{id}', [GuruController::class, 'delete'])->name('guru.delete');
+    // Route::get('/guru/export', [GuruController::class, 'export'])->name('guru.export');
+    // Route::post('/guru/import', [GuruController::class, 'import'])->name('guru.import');
+});
+
+Route::group([], function () {
+    Route::get('/mapel', [MapelController::class, 'index'])->name('mapel');
+    Route::get('/mapel/create', [MapelController::class, 'create'])->name('mapel.create');
+    Route::post('/mapel/store', [MapelController::class, 'store'])->name('mapel.store');
+    Route::get('/mapel/edit/{id}', [MapelController::class, 'edit'])->name('mapel.edit');
+    Route::put('/mapel/update/{id}', [MapelController::class, 'update'])->name('mapel.update');
+    Route::delete('/mapel/delete/{id}', [MapelController::class, 'delete'])->name('mapel.delete');
+});
+
+Route::group([], function () {
+    Route::get('/ruang', [RuangController::class, 'index'])->name('ruang');
+    Route::get('/ruang/create', [RuangController::class, 'create'])->name('ruang.create');
+    Route::post('/ruang/store', [RuangController::class, 'store'])->name('ruang.store');
+    Route::get('/ruang/edit/{id}', [RuangController::class, 'edit'])->name('ruang.edit');
+    Route::put('/ruang/update/{id}', [RuangController::class, 'update'])->name('ruang.update');
+    Route::delete('/ruang/delete/{id}', [RuangController::class, 'delete'])->name('ruang.delete');
+});
+
+Route::group([], function () {
+    Route::get('/kelas', [KelasController::class, 'index'])->name('kelas');
+    Route::get('/kelas/create', [KelasController::class, 'create'])->name('kelas.create');
+    Route::post('/kelas/store', [KelasController::class, 'store'])->name('kelas.store');
+    Route::get('/kelas/edit/{id}', [KelasController::class, 'edit'])->name('kelas.edit');
+    Route::put('/kelas/update/{id}', [KelasController::class, 'update'])->name('kelas.update');
+    Route::delete('/kelas/delete/{id}', [KelasController::class, 'delete'])->name('kelas.delete');
+});
+
+Route::group([], function () {
+    Route::get('/waktu', [WaktuController::class, 'index'])->name('waktu');
+    Route::get('/waktu/create', [WaktuController::class, 'create'])->name('waktu.create');
+    Route::post('/waktu/store', [WaktuController::class, 'store'])->name('waktu.store');
+    Route::get('/waktu/edit/{id}', [WaktuController::class, 'edit'])->name('waktu.edit');
+    Route::put('/waktu/update/{id}', [WaktuController::class, 'update'])->name('waktu.update');
+    Route::delete('/waktu/delete/{id}', [WaktuController::class, 'delete'])->name('waktu.delete');
+});
+
+Route::group([], function () {
+    Route::get('/guru_mapel', [GuruMapelController::class, 'index'])->name('guru_mapel');
+    Route::get('/guru_mapel/create', [GuruMapelController::class, 'create'])->name('guru_mapel.create');
+    Route::post('/guru_mapel/store', [GuruMapelController::class, 'store'])->name('guru_mapel.store');
+    Route::get('/guru_mapel/edit/{id}', [GuruMapelController::class, 'edit'])->name('guru_mapel.edit');
+    Route::put('/guru_mapel/update/{id}', [GuruMapelController::class, 'update'])->name('guru_mapel.update');
+    Route::delete('/guru_mapel/delete/{id}', [GuruMapelController::class, 'delete'])->name('guru_mapel.delete');
+});
+
+Route::group([], function () {
+    Route::get('/generate-jadwal', [JadwalController::class, 'index'])->name('generate-jadwal');
+    Route::get('/generate-jadwal/run', [JadwalController::class, 'generate'])->name('generate-jadwal.run');
+    Route::post('/generate-jadwal/simpan', [JadwalController::class, 'simpan'])->name('generate-jadwal.simpan');
+});
