@@ -31,7 +31,7 @@ class JadwalController extends Controller
                 ->toArray();
         }
 
-        return view('admin.read.generate', compact(
+        return view('admin.generate-jadwal.index', compact(
             'jadwal',
             'fitness',
             'fitness_history',
