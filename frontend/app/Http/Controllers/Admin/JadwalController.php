@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Models\Waktu; // Import model Waktu
 
 class JadwalController extends Controller
 {
@@ -16,15 +18,35 @@ class JadwalController extends Controller
         $fitness_history = session('fitness_history');
         $generasi = session('generasi');
 
-        return view('admin.read.generate', compact('jadwal', 'fitness', 'fitness_history', 'generasi'));
+        // Ambil SEMUA data waktu dari database - URUTKAN BERDASARKAN ID
+        $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();  // <-- URUTKAN ID
+
+        // Ambil daftar id_waktu yang dikirim API
+        $availableIds = [];
+        if ($jadwal && !empty($jadwal)) {
+            $availableIds = collect($jadwal)
+                ->where('is_keterangan', '!=', true)
+                ->pluck('id_waktu')
+                ->unique()
+                ->toArray();
+        }
+
+        return view('admin.read.generate', compact(
+            'jadwal',
+            'fitness',
+            'fitness_history',
+            'generasi',
+            'semuaWaktu',
+            'availableIds'
+        ));
     }
+
 
     public function generate()
     {
         set_time_limit(0);
 
         try {
-            // Hapus session lama
             session()->forget(['jadwal_generate', 'fitness_best', 'fitness_history', 'generasi', 'target_mapel', 'target_beban_guru']);
 
             $response = Http::timeout(0)
@@ -39,18 +61,83 @@ class JadwalController extends Controller
                 return redirect()->route('generate-jadwal')->with('error', $data['message'] ?? 'Gagal generate jadwal');
             }
 
-            // Simpan ke session
-            session(['jadwal_generate' => $data['jadwal']]);
+            // Merge dengan waktu khusus dari database (termasuk yang jam_ke = NULL)
+            $jadwalWithWaktuKhusus = $this->mergeWaktuKhususDariDB($data['jadwal']);
+
+            session(['jadwal_generate' => $jadwalWithWaktuKhusus]);
             session(['fitness_best' => $data['fitness_best']]);
             session(['fitness_history' => $data['fitness_history']]);
             session(['generasi' => $data['generasi']]);
-            session(['target_mapel' => $data['target_mapel']]);  // Tambahkan
-            session(['target_beban_guru' => $data['target_beban_guru']]);  // Tambahkan
+            session(['target_mapel' => $data['target_mapel']]);
+            session(['target_beban_guru' => $data['target_beban_guru']]);
 
             return redirect()->route('generate-jadwal')->with('success', 'Jadwal berhasil digenerate! Fitness: ' . $data['fitness_best']);
         } catch (\Exception $e) {
             return redirect()->route('generate-jadwal')->with('error', 'Gagal terhubung ke API Python: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Merge waktu khusus dari database (termasuk yang jam_ke = NULL)
+     */
+    // Di JadwalController.php
+
+    private function mergeWaktuKhususDariDB($jadwalFromAPI)
+    {
+        // Ambil semua data waktu dari database
+        $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();
+
+        // Ambil id_waktu yang sudah ada di jadwal dari API
+        $existingIds = collect($jadwalFromAPI)->pluck('id_waktu')->unique()->toArray();
+
+        $finalJadwal = [];
+
+        // Masukkan jadwal dari API terlebih dahulu
+        foreach ($jadwalFromAPI as $j) {
+            $finalJadwal[] = $j;
+        }
+
+        // Tambahkan waktu khusus yang tidak ada di API
+        foreach ($semuaWaktu as $waktu) {
+            if (!in_array($waktu->id_waktu, $existingIds)) {
+                $exists = false;
+                foreach ($finalJadwal as $fj) {
+                    if (isset($fj['id_waktu']) && $fj['id_waktu'] == $waktu->id_waktu) {
+                        $exists = true;
+                        break;
+                    }
+                }
+
+                if (!$exists) {
+                    // PERBAIKAN: Kirim jam_ke dengan benar
+                    $finalJadwal[] = [
+                        'id_waktu' => $waktu->id_waktu,
+                        'hari' => $waktu->hari,
+                        'jam' => $waktu->jam_ke,           // Untuk kompatibilitas
+                        'jam_ke' => $waktu->jam_ke,        // PENTING: Kirim jam_ke asli
+                        'kelas' => null,
+                        'guru' => null,
+                        'mapel' => null,
+                        'ruangan' => null,
+                        'id_guru_mapel' => null,
+                        'is_keterangan' => true,
+                        'keterangan' => !empty($waktu->keterangan) ? $waktu->keterangan : 'Kegiatan Khusus',
+                        'dari_database' => true,
+                        'has_null_jam' => is_null($waktu->jam_ke),
+                    ];
+                }
+            }
+        }
+
+        // Urutkan berdasarkan id_waktu
+        usort($finalJadwal, function ($a, $b) {
+            return ($a['id_waktu'] ?? 999) - ($b['id_waktu'] ?? 999);
+        });
+
+        // Debug: cek data untuk id_waktu 1 (Upacara)
+        Log::info('Data jadwal setelah merge:', ['jadwal' => $finalJadwal]);
+
+        return $finalJadwal;
     }
 
     public function simpan(Request $request)
@@ -60,6 +147,11 @@ class JadwalController extends Controller
         if (!$jadwal) {
             return redirect()->back()->with('error', 'Jadwal belum digenerate');
         }
+
+        // Filter hanya jadwal yang bukan keterangan (hanya simpan yang punya id_guru_mapel)
+        $jadwalToSave = array_filter($jadwal, function ($j) {
+            return isset($j['id_guru_mapel']) && !is_null($j['id_guru_mapel']);
+        });
 
         DB::beginTransaction();
 
@@ -79,7 +171,7 @@ class JadwalController extends Controller
             ]);
 
             // insert detail jadwal
-            foreach ($jadwal as $j) {
+            foreach ($jadwalToSave as $j) {
                 DB::table('jadwal')->insert([
                     'id_master' => $id_master,
                     'id_guru_mapel' => $j['id_guru_mapel'],

@@ -10,14 +10,30 @@
     }
 
     .keterangan-cell {
-        background: #e8f4fd;
         text-align: center;
         vertical-align: middle;
     }
 
+    /* Warna untuk Istirahat dan Ishoma - Kuning Cerah */
+    .keterangan-cell.kuning-cerah {
+        background: #fff3cd;
+    }
+
+    .keterangan-cell.kuning-cerah .keterangan-text {
+        color: #856404;
+    }
+
+    /* Warna untuk keterangan lainnya - Biru Cerah */
+    .keterangan-cell.biru-cerah {
+        background: #e8f4fd;
+    }
+
+    .keterangan-cell.biru-cerah .keterangan-text {
+        color: #0066cc;
+    }
+
     .keterangan-text {
         font-weight: bold;
-        color: #0066cc;
     }
 
     .empty-cell {
@@ -115,25 +131,6 @@
     .guru-beban-table {
         margin-top: 20px;
     }
-
-    /* .progress-bar {
-        width: 100%;
-        background-color: #e0e0e0;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .progress-fill {
-        background-color: #007bff;
-        height: 20px;
-        border-radius: 10px;
-        transition: width 0.3s;
-    }
-    .progress-fill.warning {
-        background-color: #ffc107;
-    }
-    .progress-fill.danger {
-        background-color: #dc3545;
-    } */
 
     .progress-bar {
         width: 100%;
@@ -270,48 +267,82 @@
             </div>
 
             @php
+                // Fungsi helper untuk menentukan warna berdasarkan keterangan
+                function getWarnaByKeterangan($teks)
+                {
+                    $teksLower = strtolower($teks);
+                    // Istirahat dan Ishoma pakai kuning cerah
+                    if (strpos($teksLower, 'istirahat') !== false || strpos($teksLower, 'ishoma') !== false) {
+                        return 'kuning-cerah';
+                    }
+                    // Selain itu pakai biru cerah
+                    return 'biru-cerah';
+                }
+            @endphp
+
+            @php
                 // Proses data jadwal untuk ditampilkan
                 if (isset($jadwal) && !empty($jadwal)) {
-                    // Urutan hari
+                    // URUTKAN JADWAL BERDASARKAN ID_WAKTU
+                    $jadwal = collect($jadwal)
+                        ->sortBy(function ($item) {
+                            return $item['id_waktu'] ?? 999;
+                        })
+                        ->toArray();
+
                     $urutan_hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
-                    // Kelompokkan jadwal berdasarkan hari dan jam
                     $jadwal_per_hari = [];
                     $keterangan_per_hari = [];
 
                     foreach ($jadwal as $j) {
-                        if (!isset($j['hari']) || !isset($j['jam'])) {
+                        if (!isset($j['hari'])) {
                             continue;
                         }
                         $hari = $j['hari'];
-                        $jam = $j['jam']; // Ini adalah jam_ke asli dari database
-                        $kelas = $j['kelas'];
+
+                        // Gunakan id_waktu sebagai key
+                        $jamKey = $j['id_waktu'] ?? (is_null($j['jam'] ?? null) ? 'khusus_' . rand() : $j['jam']);
 
                         if (!isset($jadwal_per_hari[$hari])) {
                             $jadwal_per_hari[$hari] = [];
                             $keterangan_per_hari[$hari] = [];
                         }
 
-                        // Cek apakah ini data keterangan (upacara, istirahat)
                         if (isset($j['is_keterangan']) && $j['is_keterangan'] === true) {
-                            $keterangan_per_hari[$hari][$jam] = $j['keterangan'];
+                            // Tentukan kelas warna berdasarkan teks keterangan
+                            $warnaClass = getWarnaByKeterangan($j['keterangan']);
+
+                            $keterangan_per_hari[$hari][$jamKey] = [
+                                'teks' => $j['keterangan'],
+                                'warna_class' => $warnaClass,
+                                'id_waktu' => $j['id_waktu'],
+                                'jam_ke' => $j['jam_ke'] ?? null,
+                                'jam' => $j['jam'] ?? null,
+                                'has_null_jam' => is_null($j['jam_ke'] ?? ($j['jam'] ?? null)),
+                            ];
                         } else {
-                            if (!isset($jadwal_per_hari[$hari][$jam])) {
-                                $jadwal_per_hari[$hari][$jam] = [];
+                            if (!isset($jadwal_per_hari[$hari][$jamKey])) {
+                                $jadwal_per_hari[$hari][$jamKey] = [];
                             }
-                            $jadwal_per_hari[$hari][$jam][$kelas] = $j;
+                            $jadwal_per_hari[$hari][$jamKey][$j['kelas']] = $j;
                         }
                     }
 
                     // Dapatkan daftar kelas unik
                     $kelas_list = collect($jadwal)
                         ->where('is_keterangan', '!=', true)
+                        ->whereNotNull('kelas')
                         ->pluck('kelas')
                         ->unique()
                         ->sort()
                         ->values();
 
-                    // Dapatkan daftar jam unik per hari (urutkan berdasarkan jam)
+                    if ($kelas_list === null || $kelas_list->isEmpty()) {
+                        $kelas_list = collect(['IX A', 'IX B', 'IX C']);
+                    }
+
+                    // Dapatkan daftar jam unik per hari
                     $jam_list_per_hari = [];
                     foreach ($urutan_hari as $hari) {
                         $jam_dari_jadwal = isset($jadwal_per_hari[$hari]) ? array_keys($jadwal_per_hari[$hari]) : [];
@@ -319,19 +350,33 @@
                             ? array_keys($keterangan_per_hari[$hari])
                             : [];
                         $semua_jam = array_unique(array_merge($jam_dari_jadwal, $jam_dari_keterangan));
-                        sort($semua_jam); // Urutkan berdasarkan jam_ke
+
+                        // Urutkan secara numerik
+                        sort($semua_jam, SORT_NUMERIC);
+
                         $jam_list_per_hari[$hari] = $semua_jam;
                     }
 
                     // Hitung bentrok
                     $bentrok = [];
                     foreach ($jadwal as $j) {
-                        if (!isset($j['hari']) || !isset($j['jam']) || !isset($j['guru']) || empty($j['guru'])) {
+                        if (!isset($j['hari']) || !isset($j['guru']) || empty($j['guru'])) {
                             continue;
                         }
-                        $key = $j['hari'] . '-' . $j['jam'] . '-' . $j['guru'];
+                        if (isset($j['is_keterangan']) && $j['is_keterangan'] === true) {
+                            continue;
+                        }
+                        $jamKey = $j['id_waktu'] ?? (is_null($j['jam'] ?? null) ? 'khusus' : $j['jam']);
+                        $key = $j['hari'] . '-' . $jamKey . '-' . $j['guru'];
                         $bentrok[$key] = ($bentrok[$key] ?? 0) + 1;
                     }
+                } else {
+                    $kelas_list = collect(['IX A', 'IX B', 'IX C']);
+                    $jam_list_per_hari = [];
+                    $urutan_hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+                    $jadwal_per_hari = [];
+                    $keterangan_per_hari = [];
+                    $bentrok = [];
                 }
             @endphp
 
@@ -347,23 +392,86 @@
                                     <thead>
                                         <tr>
                                             <th style="width: 100px">Hari</th>
-                                            <th style="width: 80px">Jam Ke</th>
-                                            @if (isset($kelas_list) && count($kelas_list) > 0)
+                                            <th style="width: 120px">Jam Ke</th>
+                                            @if (isset($kelas_list) && $kelas_list->count() > 0)
                                                 @foreach ($kelas_list as $kelas)
                                                     <th style="min-width: 150px">{{ $kelas }}</th>
                                                 @endforeach
+                                            @else
+                                                <th style="min-width: 150px">Kelas</th>
                                             @endif
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @if (isset($urutan_hari))
+                                        @if (isset($urutan_hari) && !empty($urutan_hari))
                                             @foreach ($urutan_hari as $hari)
                                                 @php
                                                     $jam_list = $jam_list_per_hari[$hari] ?? [];
                                                 @endphp
 
                                                 @if (count($jam_list) > 0)
-                                                    @foreach ($jam_list as $index => $jam)
+                                                    @foreach ($jam_list as $index => $jamKey)
+                                                        {{-- Di dalam loop foreach ($jam_list as $index => $jamKey) --}}
+
+                                                        {{-- Di dalam loop foreach ($jam_list as $index => $jamKey) --}}
+
+                                                        @php
+                                                            $isKeterangan = isset($keterangan_per_hari[$hari][$jamKey]);
+                                                            $keteranganData = $isKeterangan
+                                                                ? $keterangan_per_hari[$hari][$jamKey]
+                                                                : null;
+
+                                                            // PERBAIKAN: Tentukan tampilan jam
+                                                            $displayJam = '';
+                                                            $showJamKe = false;
+
+                                                            if ($isKeterangan && $keteranganData) {
+                                                                // Data dari database (keterangan seperti Upacara, Istirahat, dll)
+                                                                // Coba ambil dari jam_ke dulu, baru jam
+                                                                $jamKe =
+                                                                    $keteranganData['jam_ke'] ??
+                                                                    ($keteranganData['jam'] ?? null);
+
+                                                                // Debug: log untuk melihat nilai jam_ke
+                                                                if ($keteranganData['id_waktu'] == 1) {
+                                                                    \Log::info('ID Waktu 1 (Upacara):', [
+                                                                        'jam_ke' => $jamKe,
+                                                                        'keteranganData' => $keteranganData,
+                                                                    ]);
+                                                                }
+
+                                                                // Jika jam_ke ada (tidak null, tidak kosong, dan bukan 0), tampilkan
+                                                                if (!is_null($jamKe) && $jamKe !== '' && $jamKe !== 0) {
+                                                                    $displayJam = $jamKe;
+                                                                    $showJamKe = true;
+                                                                }
+                                                                // Jika jam_ke NULL, biarkan $showJamKe = false
+                                                            } else {
+                                                                // Data jadwal normal dari API
+                                                                $firstJadwal = isset($jadwal_per_hari[$hari][$jamKey])
+                                                                    ? reset($jadwal_per_hari[$hari][$jamKey])
+                                                                    : null;
+                                                                if ($firstJadwal && isset($firstJadwal['jam'])) {
+                                                                    $jamVal = $firstJadwal['jam'];
+                                                                    if (!is_null($jamVal) && $jamVal !== '') {
+                                                                        $displayJam = $jamVal;
+                                                                        $showJamKe = true;
+                                                                    }
+                                                                } elseif (is_numeric($jamKey)) {
+                                                                    $displayJam = $jamKey;
+                                                                    $showJamKe = true;
+                                                                }
+                                                            }
+
+                                                            $isJamKhusus =
+                                                                $isKeterangan &&
+                                                                ($keteranganData['has_null_jam'] ?? false);
+                                                            $colspanCount =
+                                                                $kelas_list && $kelas_list->count() > 0
+                                                                    ? $kelas_list->count()
+                                                                    : 1;
+                                                        @endphp
+
                                                         <tr>
                                                             @if ($loop->first)
                                                                 <td rowspan="{{ count($jam_list) }}">
@@ -371,91 +479,100 @@
                                                                 </td>
                                                             @endif
 
-                                                            <td class="text-center"><strong>{{ $jam }}</strong>
+                                                            {{-- KOLOM JAM --}}
+                                                            <td class="text-center">
+                                                                @if ($showJamKe && $displayJam !== '')
+                                                                    <strong>{{ $displayJam }}</strong>
+                                                                @else
+                                                                    <span style="opacity: 0.3;"></span>
+                                                                @endif
                                                             </td>
 
-                                                            @if (isset($keterangan_per_hari[$hari][$jam]))
-                                                                {{-- Tampilkan cell untuk keterangan (merge semua kelas) --}}
-                                                                <td colspan="{{ count($kelas_list) }}"
-                                                                    class="keterangan-cell">
+                                                            {{-- KOLOM UTAMA (MERGE CELL UNTUK KETERANGAN) --}}
+                                                            @if ($isKeterangan)
+                                                                @php
+                                                                    $warnaClass =
+                                                                        $keteranganData['warna_class'] ?? 'biru-cerah';
+                                                                @endphp
+                                                                <td colspan="{{ $colspanCount }}"
+                                                                    class="keterangan-cell {{ $warnaClass }}"
+                                                                    style="text-align: center; vertical-align: middle;">
                                                                     <div class="keterangan-text">
-                                                                        <strong>{{ $keterangan_per_hari[$hari][$jam] }}</strong>
+                                                                        <strong>{{ $keteranganData['teks'] }}</strong>
                                                                     </div>
                                                                 </td>
                                                             @else
-                                                                @foreach ($kelas_list as $kelas)
-                                                                    <td class="text-center">
-                                                                        @if (isset($jadwal_per_hari[$hari][$jam][$kelas]))
-                                                                            @php
-                                                                                $data =
-                                                                                    $jadwal_per_hari[$hari][$jam][
-                                                                                        $kelas
-                                                                                    ];
-                                                                                $key =
-                                                                                    $data['hari'] .
-                                                                                    '-' .
-                                                                                    $data['jam'] .
-                                                                                    '-' .
-                                                                                    $data['guru'];
-                                                                                $isBentrok =
-                                                                                    isset($bentrok[$key]) &&
-                                                                                    $bentrok[$key] > 1;
-                                                                            @endphp
+                                                                {{-- JADWAL NORMAL PER KELAS --}}
+                                                                @if ($kelas_list && $kelas_list->count() > 0)
+                                                                    @foreach ($kelas_list as $kelas)
+                                                                        <td class="text-center">
+                                                                            @if (isset($jadwal_per_hari[$hari][$jamKey][$kelas]))
+                                                                                @php
+                                                                                    $data =
+                                                                                        $jadwal_per_hari[$hari][
+                                                                                            $jamKey
+                                                                                        ][$kelas];
+                                                                                    $key =
+                                                                                        $data['hari'] .
+                                                                                        '-' .
+                                                                                        $jamKey .
+                                                                                        '-' .
+                                                                                        $data['guru'];
+                                                                                    $isBentrok =
+                                                                                        isset($bentrok[$key]) &&
+                                                                                        $bentrok[$key] > 1;
+                                                                                @endphp
 
-                                                                            <div class="{{ $isBentrok ? 'bentrok' : '' }}">
-                                                                                <strong>{{ $data['guru'] }}</strong>
-                                                                                <br>
-                                                                                <small>{{ $data['mapel'] }}</small>
-                                                                                @if ($isBentrok)
+                                                                                <div
+                                                                                    class="{{ $isBentrok ? 'bentrok' : '' }}">
+                                                                                    <strong>{{ $data['guru'] }}</strong>
                                                                                     <br>
-                                                                                    <span
-                                                                                        class="badge bg-danger">Bentrok!</span>
-                                                                                @endif
-                                                                            </div>
-                                                                        @else
-                                                                            <span class="text-muted">-</span>
-                                                                        @endif
+                                                                                    <small>{{ $data['mapel'] }}</small>
+                                                                                    @if ($isBentrok)
+                                                                                        <br>
+                                                                                        <span
+                                                                                            class="badge bg-danger">Bentrok!</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                            @else
+                                                                                <span class="text-muted"></span>
+                                                                            @endif
+                                                                        </td>
+                                                                    @endforeach
+                                                                @else
+                                                                    <td class="text-center text-muted">
+                                                                        Tidak ada data kelas
                                                                     </td>
-                                                                @endforeach
+                                                                @endif
                                                             @endif
                                                         </tr>
                                                     @endforeach
                                                 @else
                                                     <tr>
                                                         <td><strong>{{ $hari }}</strong></td>
-                                                        <td colspan="{{ count($kelas_list) + 1 }}"
-                                                            class="text-muted text-center">
+                                                        @php
+                                                            $colspanCount =
+                                                                $kelas_list && $kelas_list->count() > 0
+                                                                    ? $kelas_list->count() + 1
+                                                                    : 2;
+                                                        @endphp
+                                                        <td colspan="{{ $colspanCount }}" class="text-muted text-center">
                                                             Tidak ada jadwal untuk hari {{ $hari }}
                                                         </td>
                                                     </tr>
                                                 @endif
                                             @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">
+                                                    Belum ada data jadwal
+                                                </td>
+                                            </tr>
                                         @endif
                                     </tbody>
                                 </table>
                             </div>
 
-                            {{-- @if (isset($bentrok) && count($bentrok) > 0)
-                                <div class="alert alert-warning mt-3">
-                                    <b>⚠️ Informasi Bentrok Guru:</b><br>
-                                    @php
-                                        $bentrok_ditemukan = false;
-                                        foreach ($bentrok as $key => $count) {
-                                            if ($count > 1) {
-                                                $bentrok_ditemukan = true;
-                                                $parts = explode('-', $key);
-                                                if (count($parts) >= 3) {
-                                                    [$hari, $jam, $guru] = $parts;
-                                                    echo "• Guru <b>$guru</b> bentrok di hari <b>$hari</b> jam ke-<b>$jam</b> ($count kelas)<br>";
-                                                }
-                                            }
-                                        }
-                                        if (!$bentrok_ditemukan) {
-                                            echo '✅ Tidak ada bentrok guru!';
-                                        }
-                                    @endphp
-                                </div>
-                            @endif --}}
                             <!-- Tab Container -->
                             <div class="tab-container">
                                 <div class="tab-buttons">
@@ -666,7 +783,8 @@
                                 <!-- Tab 3: Beban Guru dengan target yang benar -->
                                 <div id="tab-beban-guru" class="tab-content">
                                     <h5><i class="mdi mdi-account-multiple"></i> Analisis Beban Mengajar Guru</h5>
-                                    <p class="text-muted">Target beban guru dihitung dari total jam mapel yang diajarkan</p>
+                                    <p class="text-muted">Target beban guru dihitung dari total jam mapel yang diajarkan
+                                    </p>
 
                                     <div class="table-responsive">
                                         <table class="table table-bordered analysis-table guru-beban-table">
@@ -743,7 +861,8 @@
                                                     jam</strong></li>
                                             <li>Rata-rata beban per guru:
                                                 <strong>{{ round(array_sum($beban_guru_aktual) / max(count($beban_guru_aktual), 1)) }}
-                                                    jam</strong></li>
+                                                    jam</strong>
+                                            </li>
                                             <li>Jumlah guru: <strong>{{ count($beban_guru_aktual) }}</strong></li>
                                         </ul>
                                     </div>
