@@ -30,7 +30,7 @@ class JadwalController extends Controller
             $response = Http::timeout(0)
                 ->get('http://127.0.0.1:8001/generate-jadwal', [
                     'populasi_size' => 300,
-                    'generasi' => 3000
+                    'generasi' => 1000
                 ]);
 
             $data = $response->json();
