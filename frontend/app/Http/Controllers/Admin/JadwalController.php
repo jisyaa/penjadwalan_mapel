@@ -51,8 +51,8 @@ class JadwalController extends Controller
 
             $response = Http::timeout(0)
                 ->get('http://127.0.0.1:8001/generate-jadwal', [
-                    'populasi_size' => 300,
-                    'generasi' => 1000
+                    'populasi_size' => 30,
+                    'generasi' => 100
                 ]);
 
             $data = $response->json();
@@ -203,4 +203,111 @@ class JadwalController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
+
+    // Di controller (JadwalController.php)
+    public function getGuruMapelOptions()
+    {
+        try {
+            $guruMapel = DB::table('guru_mapel as gm')
+                ->join('guru as g', 'gm.id_guru', '=', 'g.id_guru')
+                ->join('mapel as m', 'gm.id_mapel', '=', 'm.id_mapel')
+                ->join('kelas as k', 'gm.id_kelas', '=', 'k.id_kelas')
+                ->where('gm.aktif', 'aktif')
+                ->select(
+                    'gm.id_guru_mapel',
+                    'g.nama_guru',
+                    'm.nama_mapel',
+                    'k.nama_kelas'
+                )
+                ->orderBy('k.nama_kelas')
+                ->orderBy('g.nama_guru')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $guruMapel
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Di JadwalController.php
+    public function updateCell(Request $request)
+    {
+        try {
+            $kelas = $request->input('kelas');
+            $hari = $request->input('hari');
+            $jam = $request->input('jam');
+            $idWaktu = $request->input('id_waktu');
+            $newGuruMapelId = $request->input('id_guru_mapel');
+            $oldGuruMapelId = $request->input('old_id_guru_mapel');
+
+            // Ambil jadwal dari session
+            $jadwal = session('jadwal_generate');
+
+            if (!$jadwal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jadwal tidak ditemukan di session'
+                ]);
+            }
+
+            // Cari dan update jadwal
+            $updated = false;
+            foreach ($jadwal as &$item) {
+                if (
+                    $item['kelas'] == $kelas &&
+                    $item['hari'] == $hari &&
+                    $item['jam'] == $jam
+                ) {
+                    $item['id_guru_mapel'] = $newGuruMapelId;
+
+                    // Update guru dan mapel berdasarkan id_guru_mapel
+                    if ($newGuruMapelId) {
+                        $guruMapel = DB::table('guru_mapel as gm')
+                            ->join('guru as g', 'gm.id_guru', '=', 'g.id_guru')
+                            ->join('mapel as m', 'gm.id_mapel', '=', 'm.id_mapel')
+                            ->where('gm.id_guru_mapel', $newGuruMapelId)
+                            ->first();
+
+                        if ($guruMapel) {
+                            $item['guru'] = $guruMapel->nama_guru;
+                            $item['mapel'] = $guruMapel->nama_mapel;
+                        }
+                    } else {
+                        $item['guru'] = '';
+                        $item['mapel'] = '';
+                    }
+
+                    $updated = true;
+                    break;
+                }
+            }
+
+            if ($updated) {
+                // Simpan kembali ke session
+                session(['jadwal_generate' => $jadwal]);
+
+                return response()->json([
+                    'success' => true,
+                    'updated_jadwal' => true
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Data jadwal tidak ditemukan'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
 }

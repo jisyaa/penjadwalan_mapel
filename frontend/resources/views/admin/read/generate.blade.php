@@ -183,6 +183,39 @@
         background-color: #17a2b8;
         color: white;
     }
+
+    .editable-cell {
+        position: relative;
+    }
+
+    .cell-display {
+        cursor: pointer;
+        transition: background-color 0.2s;
+        min-height: 50px;
+    }
+
+    .cell-display:hover {
+        background-color: #e8f4fd;
+    }
+
+    .dropdown-select {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        padding: 8px;
+        font-size: 12px;
+        border: 2px solid #007bff;
+        border-radius: 4px;
+        background: white;
+        z-index: 10;
+    }
+
+    .dropdown-select:focus {
+        outline: none;
+        border-color: #0056b3;
+    }
 </style>
 
 @section('content')
@@ -505,44 +538,70 @@
                                                                 {{-- JADWAL NORMAL PER KELAS --}}
                                                                 @if ($kelas_list && $kelas_list->count() > 0)
                                                                     @foreach ($kelas_list as $kelas)
-                                                                        <td class="text-center">
-                                                                            @if (isset($jadwal_per_hari[$hari][$jamKey][$kelas]))
-                                                                                @php
-                                                                                    $data =
-                                                                                        $jadwal_per_hari[$hari][
-                                                                                            $jamKey
-                                                                                        ][$kelas];
-                                                                                    $key =
-                                                                                        $data['hari'] .
+                                                                        @php
+                                                                            $currentData = isset(
+                                                                                $jadwal_per_hari[$hari][$jamKey][
+                                                                                    $kelas
+                                                                                ],
+                                                                            )
+                                                                                ? $jadwal_per_hari[$hari][$jamKey][
+                                                                                    $kelas
+                                                                                ]
+                                                                                : null;
+                                                                            $currentGuruMapelId =
+                                                                                $currentData['id_guru_mapel'] ?? '';
+                                                                            $isBentrok =
+                                                                                isset($currentData) &&
+                                                                                isset(
+                                                                                    $bentrok[
+                                                                                        $currentData['hari'] .
+                                                                                            '-' .
+                                                                                            $jamKey .
+                                                                                            '-' .
+                                                                                            $currentData['guru']
+                                                                                    ],
+                                                                                ) &&
+                                                                                $bentrok[
+                                                                                    $currentData['hari'] .
                                                                                         '-' .
                                                                                         $jamKey .
                                                                                         '-' .
-                                                                                        $data['guru'];
-                                                                                    $isBentrok =
-                                                                                        isset($bentrok[$key]) &&
-                                                                                        $bentrok[$key] > 1;
-                                                                                @endphp
+                                                                                        $currentData['guru']
+                                                                                ] > 1;
+                                                                        @endphp
+                                                                        <td class="text-center editable-cell"
+                                                                            data-kelas="{{ $kelas }}"
+                                                                            data-hari="{{ $hari }}"
+                                                                            data-jam="{{ $jamKey }}"
+                                                                            data-id-waktu="{{ $currentData['id_waktu'] ?? '' }}"
+                                                                            data-current-id="{{ $currentGuruMapelId }}">
 
-                                                                                <div
-                                                                                    class="{{ $isBentrok ? 'bentrok' : '' }}">
-                                                                                    <strong>{{ $data['guru'] }}</strong>
+                                                                            <div class="cell-display {{ $isBentrok ? 'bentrok' : '' }}"
+                                                                                style="cursor: pointer; min-width: 150px;"
+                                                                                onclick="showDropdown(this)">
+                                                                                @if ($currentData)
+                                                                                    <strong>{{ $currentData['guru'] }}</strong>
                                                                                     <br>
-                                                                                    <small>{{ $data['mapel'] }}</small>
+                                                                                    <small>{{ $currentData['mapel'] }}</small>
                                                                                     @if ($isBentrok)
                                                                                         <br>
                                                                                         <span
                                                                                             class="badge bg-danger">Bentrok!</span>
                                                                                     @endif
-                                                                                </div>
-                                                                            @else
-                                                                                <span class="text-muted"></span>
-                                                                            @endif
+                                                                                @else
+                                                                                    <span class="text-muted">- Klik untuk
+                                                                                        isi -</span>
+                                                                                @endif
+                                                                            </div>
+
+                                                                            <select class="dropdown-select"
+                                                                                style="display: none; width: 100%;"
+                                                                                onchange="updateCell(this)">
+                                                                                <option value="">-- Kosongkan --
+                                                                                </option>
+                                                                            </select>
                                                                         </td>
                                                                     @endforeach
-                                                                @else
-                                                                    <td class="text-center text-muted">
-                                                                        Tidak ada data kelas
-                                                                    </td>
                                                                 @endif
                                                             @endif
                                                         </tr>
@@ -986,4 +1045,185 @@
             document.getElementById('clearForm').submit();
         }
     }
+
+    // Data guru_mapel options
+    let guruMapelOptions = [];
+    let optionsCache = {};
+
+    // Ambil data guru_mapel dari server
+    async function loadGuruMapelOptions() {
+        try {
+            const response = await fetch('{{ route('get.guru.mapel') }}');
+            const result = await response.json();
+
+            if (result.success) {
+                guruMapelOptions = result.data;
+
+                // Kelompokkan berdasarkan kelas
+                guruMapelOptions.forEach(option => {
+                    if (!optionsCache[option.nama_kelas]) {
+                        optionsCache[option.nama_kelas] = [];
+                    }
+                    optionsCache[option.nama_kelas].push({
+                        id: option.id_guru_mapel,
+                        text: `${option.nama_guru} - ${option.nama_mapel}`
+                    });
+                });
+
+                // Urutkan options
+                for (let kelas in optionsCache) {
+                    optionsCache[kelas].sort((a, b) => a.text.localeCompare(b.text));
+                }
+            }
+        } catch (error) {
+            console.error('Error loading guru mapel options:', error);
+        }
+    }
+
+    // Tampilkan dropdown saat cell diklik
+    function showDropdown(displayElement) {
+        const cell = displayElement.closest('td');
+        const select = cell.querySelector('.dropdown-select');
+        const kelas = cell.dataset.kelas;
+        const currentId = cell.dataset.currentId;
+
+        // Populate dropdown dengan options untuk kelas ini
+        select.innerHTML = '<option value="">-- Kosongkan --</option>';
+
+        if (optionsCache[kelas]) {
+            optionsCache[kelas].forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.id;
+                optionElement.textContent = option.text;
+                if (option.id == currentId) {
+                    optionElement.selected = true;
+                }
+                select.appendChild(optionElement);
+            });
+        }
+
+        // Sembunyikan display, tampilkan dropdown
+        displayElement.style.display = 'none';
+        select.style.display = 'block';
+        select.focus();
+
+        // Handle blur (ketika klik di luar)
+        select.onblur = function() {
+            select.style.display = 'none';
+            displayElement.style.display = 'block';
+        };
+    }
+
+    // Update cell ketika dropdown berubah
+    // Update cell ketika dropdown berubah
+    async function updateCell(selectElement) {
+        const cell = selectElement.closest('td');
+        const kelas = cell.dataset.kelas;
+        const hari = cell.dataset.hari;
+        const jam = cell.dataset.jam;
+        const idWaktu = cell.dataset.idWaktu;
+        const selectedId = selectElement.value;
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const selectedText = selectedOption.text;
+
+        // Jika tidak ada perubahan
+        if (selectedId == cell.dataset.currentId) {
+            selectElement.style.display = 'none';
+            cell.querySelector('.cell-display').style.display = 'block';
+            return;
+        }
+
+        // Konfirmasi perubahan (optional)
+        if (!confirm('Ubah jadwal? Halaman akan di-refresh setelah perubahan.')) {
+            selectElement.style.display = 'none';
+            cell.querySelector('.cell-display').style.display = 'block';
+            return;
+        }
+
+        // Simpan perubahan ke server
+        try {
+            const response = await fetch('{{ route('generate-jadwal.update-cell') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    kelas: kelas,
+                    hari: hari,
+                    jam: jam,
+                    id_waktu: idWaktu,
+                    id_guru_mapel: selectedId,
+                    old_id_guru_mapel: cell.dataset.currentId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Tampilkan pesan sukses sebelum refresh
+                showNotification('success', 'Data berhasil diupdate. Halaman akan di-refresh...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert('Gagal update: ' + (result.message || 'Terjadi kesalahan'));
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan pada server');
+            window.location.reload();
+        }
+    }
+
+    function rollbackCell(cell, oldId) {
+        const displayElement = cell.querySelector('.cell-display');
+
+        if (oldId && optionsCache[cell.dataset.kelas]) {
+            const oldOption = optionsCache[cell.dataset.kelas].find(opt => opt.id == oldId);
+            if (oldOption) {
+                const parts = oldOption.text.split(' - ');
+                const guru = parts[0];
+                const mapel = parts.slice(1).join(' - ');
+                displayElement.innerHTML = `
+                    <strong>${guru}</strong>
+                    <br>
+                    <small>${mapel}</small>
+                `;
+            } else {
+                displayElement.innerHTML = '<span class="text-muted">- Klik untuk isi -</span>';
+            }
+        } else {
+            displayElement.innerHTML = '<span class="text-muted">- Klik untuk isi -</span>';
+        }
+
+        cell.dataset.currentId = oldId;
+    }
+
+    function showNotification(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        const container = document.querySelector('.page-header');
+        if (container && container.parentNode) {
+            container.parentNode.insertBefore(alertDiv, container.nextSibling);
+        } else {
+            document.querySelector('.content').prepend(alertDiv);
+        }
+
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+
+    // Load data saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        loadGuruMapelOptions();
+    });
 </script>

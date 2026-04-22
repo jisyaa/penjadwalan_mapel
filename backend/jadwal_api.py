@@ -224,11 +224,60 @@ class PenjadwalanGenetika:
                     jam_mapel[id_kelas][id_mapel] += 1
         return jam_mapel
     
-    def hitung_fitness(self, jadwal):
-        """Menghitung fitness"""
+    def hitung_penalty_clustering(self, jadwal):
+        """
+        Menghitung penalty jika jam mapel tidak berkelompok sesuai pola
+        """
         penalty = 0
         
-        # 1. Cek bentrok guru
+        for id_kelas in self.data['kelas_list']:
+            # Kumpulkan posisi jam untuk setiap mapel
+            mapel_positions = defaultdict(list)
+            
+            for slot, id_guru_mapel in enumerate(jadwal[id_kelas]):
+                if id_guru_mapel and id_guru_mapel in self.data['guru_mapel_info']:
+                    id_mapel = self.data['guru_mapel_info'][id_guru_mapel][0]
+                    mapel_positions[id_mapel].append(slot)
+            
+            # Cek setiap mapel
+            for id_mapel, positions in mapel_positions.items():
+                target_jam = self.data['mapel_beban'].get(id_mapel, 0)
+                if target_jam == 0:
+                    continue
+                
+                # Urutkan posisi
+                positions.sort()
+                cluster_pattern = self.get_cluster_pattern(target_jam)
+                
+                # Cek apakah posisi sesuai dengan pola cluster
+                expected_clusters = []
+                remaining = target_jam
+                for size in cluster_pattern:
+                    expected_clusters.append(size)
+                    remaining -= size
+                
+                # Cek apakah posisi membentuk cluster yang sesuai
+                idx = 0
+                for expected_size in expected_clusters:
+                    if idx + expected_size > len(positions):
+                        penalty += 50  # Tidak cukup posisi
+                        break
+                    
+                    # Cek apakah expected_size slot berurutan
+                    for i in range(expected_size - 1):
+                        if positions[idx + i + 1] != positions[idx + i] + 1:
+                            penalty += 10  # Tidak berurutan
+                            break
+                    
+                    idx += expected_size
+        
+        return penalty
+    
+    def hitung_fitness(self, jadwal):
+        """Menghitung fitness dengan penalty clustering"""
+        penalty = 0
+        
+        # 1. Cek bentrok guru (prioritas tertinggi)
         for slot in range(self.data['total_jam']):
             guru_di_slot = {}
             for id_kelas in self.data['kelas_list']:
@@ -263,6 +312,9 @@ class PenjadwalanGenetika:
             selisih = abs(aktual_beban - target_beban)
             if selisih > 0:
                 penalty += selisih * 10
+        
+        # 4. Cek clustering (tambahan baru)
+        penalty += self.hitung_penalty_clustering(jadwal)
         
         return penalty
     
@@ -314,6 +366,33 @@ class PenjadwalanGenetika:
                 break
         
         return jadwal
+
+    def get_cluster_pattern(self, total_jam):
+        """
+        Menentukan pola pengelompokan berdasarkan total jam
+        Returns: list of cluster sizes (contoh: [2,3] untuk 5 jam)
+        """
+        if total_jam == 6:
+            return [2, 2, 2]  # 3 sesi @2 jam
+        elif total_jam == 5:
+            return [2, 3]     # 2 jam + 3 jam
+        elif total_jam == 4:
+            return [2, 2]     # 2 sesi @2 jam
+        elif total_jam == 3:
+            return [3]        # 1 sesi @3 jam
+        elif total_jam == 2:
+            return [2]        # 1 sesi @2 jam
+        elif total_jam == 1:
+            return [1]        # 1 sesi @1 jam
+        else:
+            # Untuk jumlah lain (7,8,9,dll), pecah menjadi 2 jam sebanyak mungkin
+            clusters = []
+            while total_jam >= 2:
+                clusters.append(2)
+                total_jam -= 2
+            if total_jam > 0:
+                clusters.append(total_jam)
+            return clusters
     
     def preprocess_guru_constraint(self):
         """
@@ -339,37 +418,113 @@ class PenjadwalanGenetika:
         print(f"Guru prioritas (mengajar >5 kelas): {len(guru_prioritas)} guru")
         return guru_prioritas
     
-    def generate_initial_population(self, populasi_size):
-        """Membuat populasi awal (versi standar)"""
+    # def generate_initial_population(self, populasi_size):
+    #     """Membuat populasi awal (versi standar)"""
+    #     populasi = []
+        
+    #     for _ in range(populasi_size):
+    #         jadwal = {}
+    #         for id_kelas in self.data['kelas_list']:
+    #             jadwal_kelas = [None] * self.data['total_jam']
+                
+    #             guru_mapel_list = self.data['kelas_to_guru_mapel'].get(id_kelas, [])
+    #             if not guru_mapel_list:
+    #                 continue
+                
+    #             # Buat daftar berdasarkan target jam mapel
+    #             daftar_guru_mapel = []
+    #             for id_mapel, id_guru, id_guru_mapel in guru_mapel_list:
+    #                 target_jam = self.data['mapel_beban'].get(id_mapel, 0)
+    #                 daftar_guru_mapel.extend([id_guru_mapel] * target_jam)
+                
+    #             # Sesuaikan jumlah
+    #             while len(daftar_guru_mapel) < self.data['total_jam']:
+    #                 daftar_guru_mapel.append(random.choice([gm for _, _, gm in guru_mapel_list]))
+    #             while len(daftar_guru_mapel) > self.data['total_jam']:
+    #                 daftar_guru_mapel.pop()
+                
+    #             random.shuffle(daftar_guru_mapel)
+                
+    #             for i in range(self.data['total_jam']):
+    #                 jadwal_kelas[i] = daftar_guru_mapel[i] if i < len(daftar_guru_mapel) else None
+                
+    #             jadwal[id_kelas] = jadwal_kelas
+            
+    #         encoded = self.encode_jadwal(jadwal)
+    #         populasi.append(encoded)
+        
+    #     return populasi
+
+    def generate_initial_population_with_clustering(self, populasi_size):
+        """Membuat populasi awal dengan pengelompokan jam berdekatan"""
         populasi = []
         
         for _ in range(populasi_size):
             jadwal = {}
             for id_kelas in self.data['kelas_list']:
+                # Inisialisasi semua slot dengan None
                 jadwal_kelas = [None] * self.data['total_jam']
                 
+                # Dapatkan daftar guru_mapel untuk kelas ini
                 guru_mapel_list = self.data['kelas_to_guru_mapel'].get(id_kelas, [])
                 if not guru_mapel_list:
                     continue
                 
-                # Buat daftar berdasarkan target jam mapel
-                daftar_guru_mapel = []
+                # Buat daftar id_guru_mapel beserta target jam
+                mapel_list = []
                 for id_mapel, id_guru, id_guru_mapel in guru_mapel_list:
                     target_jam = self.data['mapel_beban'].get(id_mapel, 0)
-                    daftar_guru_mapel.extend([id_guru_mapel] * target_jam)
+                    if target_jam > 0:
+                        mapel_list.append({
+                            'id_guru_mapel': id_guru_mapel,
+                            'target_jam': target_jam,
+                            'cluster_pattern': self.get_cluster_pattern(target_jam)
+                        })
                 
-                # Sesuaikan jumlah
-                while len(daftar_guru_mapel) < self.data['total_jam']:
-                    daftar_guru_mapel.append(random.choice([gm for _, _, gm in guru_mapel_list]))
-                while len(daftar_guru_mapel) > self.data['total_jam']:
-                    daftar_guru_mapel.pop()
+                # Acak urutan mapel
+                random.shuffle(mapel_list)
                 
-                random.shuffle(daftar_guru_mapel)
+                # Dapatkan semua slot yang tersedia (indeks)
+                available_slots = list(range(self.data['total_jam']))
+                random.shuffle(available_slots)
                 
-                for i in range(self.data['total_jam']):
-                    jadwal_kelas[i] = daftar_guru_mapel[i] if i < len(daftar_guru_mapel) else None
+                # Tempatkan mapel ke slot dengan pola berkelompok
+                for mapel in mapel_list:
+                    clusters = mapel['cluster_pattern']
+                    for cluster_size in clusters:
+                        # Cari slot yang berurutan dengan panjang cluster_size
+                        placed = False
+                        for start_idx in range(len(available_slots) - cluster_size + 1):
+                            # Cek apakah slot berurutan dan semuanya kosong
+                            slots_to_use = available_slots[start_idx:start_idx + cluster_size]
+                            all_empty = all(jadwal_kelas[slot] is None for slot in slots_to_use)
+                            
+                            if all_empty:
+                                # Tempatkan mapel ke slot-slot ini
+                                for slot in slots_to_use:
+                                    jadwal_kelas[slot] = mapel['id_guru_mapel']
+                                # Hapus slot yang sudah digunakan dari available_slots
+                                for slot in slots_to_use:
+                                    available_slots.remove(slot)
+                                placed = True
+                                break
+                        
+                        # Jika tidak ada slot berurutan, tempatkan di slot kosong acak
+                        if not placed and available_slots:
+                            for _ in range(min(cluster_size, len(available_slots))):
+                                slot = available_slots.pop(0)
+                                jadwal_kelas[slot] = mapel['id_guru_mapel']
+                
+                # Isi sisa slot kosong dengan mapel acak
+                for slot in available_slots:
+                    if jadwal_kelas[slot] is None and guru_mapel_list:
+                        random_mapel = random.choice(guru_mapel_list)[2]  # id_guru_mapel
+                        jadwal_kelas[slot] = random_mapel
                 
                 jadwal[id_kelas] = jadwal_kelas
+            
+            # Perbaiki bentrok
+            jadwal = self.repair_bentrok(jadwal)
             
             encoded = self.encode_jadwal(jadwal)
             populasi.append(encoded)
@@ -435,6 +590,41 @@ class PenjadwalanGenetika:
         anak1 = parent1[:point1] + parent2[point1:point2] + parent1[point2:]
         anak2 = parent2[:point1] + parent1[point1:point2] + parent2[point2:]
         return anak1, anak2
+    
+    def mutate_with_clustering(self, individual, mutation_rate=0.15):
+        """
+        Mutasi yang mempertahankan pola clustering
+        """
+        jadwal = self.decode_jadwal(individual)
+        
+        for id_kelas in self.data['kelas_list']:
+            if random.random() < mutation_rate:
+                # Pilih 2 cluster berbeda untuk ditukar
+                # Kumpulkan posisi per mapel
+                mapel_clusters = defaultdict(list)
+                for slot, id_guru_mapel in enumerate(jadwal[id_kelas]):
+                    if id_guru_mapel and id_guru_mapel in self.data['guru_mapel_info']:
+                        id_mapel = self.data['guru_mapel_info'][id_guru_mapel][0]
+                        mapel_clusters[id_mapel].append(slot)
+                
+                # Pilih 2 mapel berbeda
+                mapel_list = list(mapel_clusters.keys())
+                if len(mapel_list) >= 2:
+                    mapel1, mapel2 = random.sample(mapel_list, 2)
+                    
+                    # Tukar seluruh cluster
+                    slots1 = mapel_clusters[mapel1]
+                    slots2 = mapel_clusters[mapel2]
+                    
+                    if len(slots1) == len(slots2):
+                        for s1, s2 in zip(slots1, slots2):
+                            jadwal[id_kelas][s1], jadwal[id_kelas][s2] = \
+                                jadwal[id_kelas][s2], jadwal[id_kelas][s1]
+        
+        # Perbaiki bentrok
+        jadwal = self.repair_bentrok(jadwal)
+        
+        return self.encode_jadwal(jadwal)
     
     def mutate(self, individual, mutation_rate=0.1):
         """Mutasi dengan swap"""
@@ -729,11 +919,11 @@ class PenjadwalanGenetika:
         best_individual = None
         
         # Inisialisasi populasi
-        print("Membuat populasi awal...")
+        print("Membuat populasi awal dengan clustering...")
         try:
-            populasi = self.generate_initial_population_with_constraint(populasi_size)
+            populasi = self.generate_initial_population_with_clustering(populasi_size)
         except Exception as e:
-            print(f"Error inisialisasi dengan constraint: {e}")
+            print(f"Error inisialisasi dengan clustering: {e}")
             print("Menggunakan inisialisasi biasa...")
             populasi = self.generate_initial_population(populasi_size)
         
@@ -762,7 +952,7 @@ class PenjadwalanGenetika:
             
             self.fitness_history.append(self.best_fitness)
             
-            if gen % 100 == 0:
+            if gen % 1 == 0:
                 avg_fitness = sum(fitness_scores) / len(fitness_scores)
                 print(f"Generasi {gen}: Best Fitness = {self.best_fitness}, Avg Fitness = {avg_fitness:.2f}")
             
@@ -836,7 +1026,7 @@ def generate_jadwal():
     """Endpoint untuk generate jadwal"""
     try:
         populasi_size = request.args.get('populasi_size', 300, type=int)
-        generasi = request.args.get('generasi', 3000, type=int)
+        generasi = request.args.get('generasi', 1000, type=int)
         
         print(f"\n{'='*50}")
         print(f"REQUEST GENERATE JADWAL")

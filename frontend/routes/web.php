@@ -87,4 +87,6 @@ Route::group([], function () {
     Route::get('/generate-jadwal', [JadwalController::class, 'index'])->name('generate-jadwal');
     Route::get('/generate-jadwal/run', [JadwalController::class, 'generate'])->name('generate-jadwal.run');
     Route::post('/generate-jadwal/simpan', [JadwalController::class, 'simpan'])->name('generate-jadwal.simpan');
+    Route::get('/get-guru-mapel-options', [JadwalController::class, 'getGuruMapelOptions'])->name('get.guru.mapel');
+    Route::post('/generate-jadwal/update-cell', [JadwalController::class, 'updateCell'])->name('generate-jadwal.update-cell');
 });
