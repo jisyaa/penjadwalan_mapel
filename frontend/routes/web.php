@@ -26,7 +26,11 @@ use Illuminate\Support\Facades\Route;
 //     return view('admin');
 // });
 
-Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
+Route::group([], function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/api/dashboard/bentrok', [DashboardController::class, 'getBentrokData'])->name('api.dashboard.bentrok');
+    Route::get('/api/dashboard/beban-guru', [DashboardController::class, 'getBebanGuruData'])->name('api.dashboard.beban-guru');
+});
 
 Route::group([], function () {
     Route::get('/guru', [GuruController::class, 'index'])->name('guru');

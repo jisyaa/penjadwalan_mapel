@@ -20,10 +20,26 @@ class JadwalController extends Controller
 
         $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();
 
+        // Buat mapping waktu untuk akses cepat
+        $waktuMap = [];
+        foreach ($semuaWaktu as $w) {
+            $waktuMap[$w->id_waktu] = $w;
+        }
+
+        // Tambahkan waktu_mulai dan waktu_selesai ke data jadwal jika ada
+        if ($jadwal && !empty($jadwal)) {
+            foreach ($jadwal as &$item) {
+                if (isset($item['id_waktu']) && isset($waktuMap[$item['id_waktu']])) {
+                    $item['waktu_mulai'] = $waktuMap[$item['id_waktu']]->waktu_mulai;
+                    $item['waktu_selesai'] = $waktuMap[$item['id_waktu']]->waktu_selesai;
+                }
+            }
+        }
+
         $target_mapel = $this->hitungTargetJamMapel();
         $target_beban_guru = $this->hitungTargetBebanGuru();
 
-        $getWarnaByKeterangan = function($teks) {
+        $getWarnaByKeterangan = function ($teks) {
             return $this->getWarnaByKeterangan($teks);
         };
 
@@ -45,7 +61,8 @@ class JadwalController extends Controller
             'generasi',
             'semuaWaktu',
             'availableIds',
-            'getWarnaByKeterangan'
+            'getWarnaByKeterangan',
+            'waktuMap'  // Tambahkan ini
         ));
     }
 
@@ -135,16 +152,23 @@ class JadwalController extends Controller
 
     private function mergeWaktuKhususDariDB($jadwalFromAPI)
     {
-        // Ambil semua data waktu dari database
         $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();
 
-        // Ambil id_waktu yang sudah ada di jadwal dari API
-        $existingIds = collect($jadwalFromAPI)->pluck('id_waktu')->unique()->toArray();
+        // Buat mapping waktu untuk akses cepat
+        $waktuMap = [];
+        foreach ($semuaWaktu as $w) {
+            $waktuMap[$w->id_waktu] = $w;
+        }
 
+        $existingIds = collect($jadwalFromAPI)->pluck('id_waktu')->unique()->toArray();
         $finalJadwal = [];
 
-        // Masukkan jadwal dari API terlebih dahulu
+        // Masukkan jadwal dari API, tambahkan waktu_mulai dan waktu_selesai
         foreach ($jadwalFromAPI as $j) {
+            if (isset($j['id_waktu']) && isset($waktuMap[$j['id_waktu']])) {
+                $j['waktu_mulai'] = $waktuMap[$j['id_waktu']]->waktu_mulai;
+                $j['waktu_selesai'] = $waktuMap[$j['id_waktu']]->waktu_selesai;
+            }
             $finalJadwal[] = $j;
         }
 
@@ -160,12 +184,13 @@ class JadwalController extends Controller
                 }
 
                 if (!$exists) {
-                    // PERBAIKAN: Kirim jam_ke dengan benar
                     $finalJadwal[] = [
                         'id_waktu' => $waktu->id_waktu,
                         'hari' => $waktu->hari,
-                        'jam' => $waktu->jam_ke,           // Untuk kompatibilitas
-                        'jam_ke' => $waktu->jam_ke,        // PENTING: Kirim jam_ke asli
+                        'jam' => $waktu->jam_ke,
+                        'jam_ke' => $waktu->jam_ke,
+                        'waktu_mulai' => $waktu->waktu_mulai,    // TAMBAHKAN
+                        'waktu_selesai' => $waktu->waktu_selesai, // TAMBAHKAN
                         'kelas' => null,
                         'guru' => null,
                         'mapel' => null,
@@ -180,13 +205,9 @@ class JadwalController extends Controller
             }
         }
 
-        // Urutkan berdasarkan id_waktu
         usort($finalJadwal, function ($a, $b) {
             return ($a['id_waktu'] ?? 999) - ($b['id_waktu'] ?? 999);
         });
-
-        // Debug: cek data untuk id_waktu 1 (Upacara)
-        Log::info('Data jadwal setelah merge:', ['jadwal' => $finalJadwal]);
 
         return $finalJadwal;
     }

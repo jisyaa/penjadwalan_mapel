@@ -23,6 +23,8 @@
                 'id_waktu' => $j['id_waktu'],
                 'jam_ke' => $j['jam_ke'] ?? null,
                 'jam' => $j['jam'] ?? null,
+                'waktu_mulai' => $j['waktu_mulai'] ?? '',
+                'waktu_selesai' => $j['waktu_selesai'] ?? '',
             ];
         } else {
             if (!isset($jadwal_per_hari[$hari][$jamKey])) {
@@ -78,7 +80,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 100px">Hari</th>
-                                <th style="width: 120px">Jam Ke</th>
+                                <th style="width: 120px">Jam Ke / Waktu</th> {{-- Ubah judul kolom --}}
                                 @foreach ($kelas_list as $kelas)
                                     <th style="min-width: 150px">{{ $kelas }}</th>
                                 @endforeach
@@ -96,6 +98,9 @@
                                                 : null;
                                             $displayJam = '';
                                             $showJamKe = false;
+                                            $waktuMulai = '';
+                                            $waktuSelesai = '';
+                                            $waktuRange = '';
 
                                             if ($isKeterangan && $keteranganData) {
                                                 $jamKe = $keteranganData['jam_ke'] ?? ($keteranganData['jam'] ?? null);
@@ -103,6 +108,9 @@
                                                     $displayJam = $jamKe;
                                                     $showJamKe = true;
                                                 }
+                                                // Ambil waktu dari data keterangan
+                                                $waktuMulai = $keteranganData['waktu_mulai'] ?? '';
+                                                $waktuSelesai = $keteranganData['waktu_selesai'] ?? '';
                                             } else {
                                                 $firstJadwal = isset($jadwal_per_hari[$hari][$jamKey])
                                                     ? reset($jadwal_per_hari[$hari][$jamKey])
@@ -119,6 +127,21 @@
                                                     $displayJam = $jamKey;
                                                     $showJamKe = true;
                                                 }
+                                                // Ambil waktu dari data jadwal
+                                                if ($firstJadwal) {
+                                                    $waktuMulai = $firstJadwal['waktu_mulai'] ?? '';
+                                                    $waktuSelesai = $firstJadwal['waktu_selesai'] ?? '';
+                                                }
+                                            }
+
+                                            // Format waktu range
+                                            if ($waktuMulai && $waktuSelesai) {
+                                                $waktuRange =
+                                                    '<br><small>' .
+                                                    substr($waktuMulai, 0, 5) .
+                                                    '-' .
+                                                    substr($waktuSelesai, 0, 5) .
+                                                    '</small>';
                                             }
 
                                             $colspanCount = $kelas_list->count();
@@ -129,12 +152,18 @@
                                                     <strong>{{ $hari }}</strong>
                                                 </td>
                                             @endif
+
+                                            {{-- Kolom Jam Ke + Waktu --}}
                                             <td class="text-center">
                                                 @if ($showJamKe && $displayJam !== '')
                                                     <strong>{{ $displayJam }}</strong>
                                                 @else
-                                                    <span style="opacity: 0.3;">-</span>
+                                                    <span style="opacity: 0.3;"></span>
                                                 @endif
+                                            </td>
+
+                                            <td class="text-center">
+                                                    {!! $waktuRange !!}
                                             </td>
 
                                             @if ($isKeterangan)

@@ -30,7 +30,7 @@ class HistoryJadwalController extends Controller
 
         $isAktif = ($master->aktif == 'aktif');
 
-        $getWarnaByKeterangan = function($teks) {
+        $getWarnaByKeterangan = function ($teks) {
             return $this->getWarnaByKeterangan($teks);
         };
 
@@ -75,6 +75,8 @@ class HistoryJadwalController extends Controller
                 'm.nama_mapel',
                 'w.hari',
                 'w.jam_ke',
+                'w.waktu_mulai',
+                'w.waktu_selesai',
                 'w.keterangan'
             )
             ->get();
@@ -95,14 +97,12 @@ class HistoryJadwalController extends Controller
                 'hari' => $detail->hari,
                 'jam' => $detail->jam_ke,
                 'jam_ke' => $detail->jam_ke,
+                'waktu_mulai' => $detail->waktu_mulai,
+                'waktu_selesai' => $detail->waktu_selesai,
                 'keterangan' => '',
                 'is_keterangan' => false
             ];
         }
-
-        // =====================================================
-        // TAMBAHKAN SLOT KETERANGAN (Upacara, Istirahat, Ishoma)
-        // =====================================================
 
         // Ambil semua waktu yang memiliki keterangan dari database
         $waktuKeterangan = DB::table('waktu')
@@ -117,12 +117,10 @@ class HistoryJadwalController extends Controller
             ->filter()
             ->values();
 
-        // Jika tidak ada kelas, gunakan default
         if ($kelasList->isEmpty()) {
             $kelasList = collect(['IX A', 'IX B', 'IX C', 'IX D', 'IX E', 'IX F', 'IX G', 'VIII A', 'VIII B']);
         }
 
-        // Buat set key yang sudah ada untuk menghindari duplikat
         $existingKeys = [];
         foreach ($jadwalMap as $key => $item) {
             $existingKeys[$key] = true;
@@ -133,7 +131,6 @@ class HistoryJadwalController extends Controller
             foreach ($kelasList as $kelas) {
                 $key = $wkt->id_waktu . '_' . $kelas;
 
-                // Hanya tambahkan jika belum ada
                 if (!isset($existingKeys[$key])) {
                     $jadwalMap[$key] = [
                         'id_jadwal' => null,
@@ -146,6 +143,8 @@ class HistoryJadwalController extends Controller
                         'hari' => $wkt->hari,
                         'jam' => null,
                         'jam_ke' => $wkt->jam_ke,
+                        'waktu_mulai' => $wkt->waktu_mulai,   
+                        'waktu_selesai' => $wkt->waktu_selesai,
                         'keterangan' => $wkt->keterangan,
                         'is_keterangan' => true
                     ];
@@ -153,10 +152,8 @@ class HistoryJadwalController extends Controller
             }
         }
 
-        // Konversi ke array dan urutkan berdasarkan id_waktu
         $jadwal = array_values($jadwalMap);
 
-        // Urutkan berdasarkan hari dan jam
         $urutanHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
         usort($jadwal, function ($a, $b) use ($urutanHari) {
             $hariA = array_search($a['hari'], $urutanHari);
