@@ -115,7 +115,7 @@
 
                                                         <td>
                                                             <a href="{{ route('guru_mapel.edit', ['id' => $guru_mapel->id_guru_mapel]) }}"
-                                                                class="btn btn-sm btn-primary">
+                                                                class="btn btn-sm btn-info me-2">
                                                                 <i class="mdi mdi-pencil"></i>
                                                             </a>
 

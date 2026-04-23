@@ -13,4 +13,9 @@ class Mapel extends Model
     protected $table = 'mapel';
     public $timestamps = false;
     protected $primaryKey = 'id_mapel';
+
+    public function guruMapels()
+    {
+        return $this->hasMany(GuruMapel::class, 'id_mapel');
+    }
 }

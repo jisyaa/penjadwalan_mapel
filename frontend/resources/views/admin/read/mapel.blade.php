@@ -53,14 +53,14 @@
                                             <div class="row d-flex">
                                                 <div class="col-auto mb-1">
                                                     <a href="{{ route('mapel.edit', ['id' => $mapel->id_mapel]) }}"
-                                                        class="btn btn-primary mb-2 d-flex align-items-center">
+                                                        class="btn btn-sm btn-info">
                                                         <span class="mdi mdi-file-edit me-1"></span>Edit
                                                     </a>
                                                 </div>
                                                 <div class="col-auto">
                                                     <a data-bs-toggle="modal"
                                                         data-bs-target="#staticBackdrop{{ $mapel->id_mapel }}"
-                                                        class="btn btn-danger d-flex align-items-center mb-2">
+                                                        class="btn btn-sm btn-danger">
                                                         <span class="mdi mdi-delete-outline me-1"></span>Hapus
                                                     </a>
                                                 </div>

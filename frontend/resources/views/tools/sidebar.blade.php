@@ -45,6 +45,12 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="{{ route('history.jadwal.index') }}">
+                <i class="menu-icon mdi mdi-history"></i>
+                <span class="menu-title">History Jadwal</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link" href="{{ route('generate-jadwal') }}">
                 <i class="menu-icon mdi mdi-calendar-plus"></i>
                 <span class="menu-title">Generate Jadwal</span>

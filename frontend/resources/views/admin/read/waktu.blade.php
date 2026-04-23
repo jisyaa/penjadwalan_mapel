@@ -57,14 +57,14 @@
                                             <div class="row d-flex">
                                                 <div class="col-auto mb-1">
                                                     <a href="{{ route('waktu.edit', ['id' => $waktu->id_waktu]) }}"
-                                                        class="btn btn-primary mb-2 d-flex align-items-center">
+                                                        class="btn btn-info btn-sm">
                                                         <span class="mdi mdi-file-edit me-1"></span>Edit
                                                     </a>
                                                 </div>
                                                 <div class="col-auto">
                                                     <a data-bs-toggle="modal"
                                                         data-bs-target="#staticBackdrop{{ $waktu->id_waktu }}"
-                                                        class="btn btn-danger d-flex align-items-center mb-2">
+                                                        class="btn btn-danger btn-sm">
                                                         <span class="mdi mdi-delete-outline me-1"></span>Hapus
                                                     </a>
                                                 </div>

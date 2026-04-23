@@ -1,14 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\GuruController;
+use App\Http\Controllers\Admin\GuruMapelController;
+use App\Http\Controllers\Admin\HistoryJadwalController;
+use App\Http\Controllers\Admin\JadwalController;
+use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\MapelController;
 use App\Http\Controllers\Admin\RuangController;
-use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\WaktuController;
-use App\Http\Controllers\Admin\GuruMapelController;
-use App\Http\Controllers\Admin\JadwalController;
+use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,4 +90,13 @@ Route::group([], function () {
     Route::post('/generate-jadwal/simpan', [JadwalController::class, 'simpan'])->name('generate-jadwal.simpan');
     Route::get('/get-guru-mapel-options', [JadwalController::class, 'getGuruMapelOptions'])->name('get.guru.mapel');
     Route::post('/generate-jadwal/update-cell', [JadwalController::class, 'updateCell'])->name('generate-jadwal.update-cell');
+});
+
+Route::group([], function () {
+    Route::get('/history-jadwal', [HistoryJadwalController::class, 'index'])->name('history.jadwal.index');
+    Route::get('/history-jadwal/{id}', [HistoryJadwalController::class, 'show'])->name('history.jadwal.show');
+    Route::delete('/history-jadwal/{id}', [HistoryJadwalController::class, 'destroy'])->name('history.jadwal.destroy');
+    Route::post('/history-jadwal/{id}/update-cell', [HistoryJadwalController::class, 'updateCell'])->name('history.jadwal.update-cell');
+    Route::post('/history-jadwal/{id}/update-master', [HistoryJadwalController::class, 'updateMaster'])->name('history.jadwal.update-master');
+    Route::post('/history-jadwal/{id}/save-changes', [HistoryJadwalController::class, 'saveChanges'])->name('history.jadwal.save-changes');
 });

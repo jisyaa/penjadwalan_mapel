@@ -832,18 +832,6 @@ class PenjadwalanGenetika:
         """Konversi ke format yang sesuai dengan PHP - termasuk data target"""
         output = []
         
-        # Buat data target mapel untuk setiap kelas
-        target_mapel = {}
-        for id_mapel, target in self.data['mapel_beban'].items():
-            nama_mapel = self.data['id_mapel_to_nama'].get(id_mapel, str(id_mapel))
-            target_mapel[nama_mapel] = target
-        
-        # Buat data target beban guru
-        target_beban_guru = {}
-        for id_guru, target in self.data['guru_beban'].items():
-            nama_guru = self.data['id_guru_to_nama'].get(id_guru, str(id_guru))
-            target_beban_guru[nama_guru] = target
-        
         for id_kelas in self.data['kelas_list']:
             for slot, id_guru_mapel in enumerate(jadwal_dict[id_kelas]):
                 # Ambil informasi waktu (dengan jam_ke asli)
@@ -884,9 +872,7 @@ class PenjadwalanGenetika:
         
         # Tambahkan data target ke output
         return {
-            'jadwal': output,
-            'target_mapel': target_mapel,
-            'target_beban_guru': target_beban_guru
+            'jadwal': output
         }
     
     def jalankan(self, populasi_size=150, generasi=1000):
@@ -1065,8 +1051,6 @@ def generate_jadwal():
         return jsonify({
             'status': 'success',
             'jadwal': jadwal['jadwal'],
-            'target_mapel': jadwal['target_mapel'],
-            'target_beban_guru': jadwal['target_beban_guru'],
             'fitness_best': fitness,
             'fitness_history': history,
             'generasi': len(history),

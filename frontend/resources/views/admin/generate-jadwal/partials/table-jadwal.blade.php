@@ -1,12 +1,4 @@
 @php
-    function getWarnaByKeterangan($teks) {
-        $teksLower = strtolower($teks);
-        if (strpos($teksLower, 'istirahat') !== false || strpos($teksLower, 'ishoma') !== false) {
-            return 'kuning-cerah';
-        }
-        return 'biru-cerah';
-    }
-
     // Proses data jadwal
     if (isset($jadwal) && !empty($jadwal)) {
         $jadwal = collect($jadwal)->sortBy(fn($item) => $item['id_waktu'] ?? 999)->toArray();
@@ -27,7 +19,7 @@
             if (isset($j['is_keterangan']) && $j['is_keterangan'] === true) {
                 $keterangan_per_hari[$hari][$jamKey] = [
                     'teks' => $j['keterangan'],
-                    'warna_class' => getWarnaByKeterangan($j['keterangan']),
+                    'warna_class' => $getWarnaByKeterangan($j['keterangan']),
                     'id_waktu' => $j['id_waktu'],
                     'jam_ke' => $j['jam_ke'] ?? null,
                     'jam' => $j['jam'] ?? null,
@@ -123,7 +115,13 @@
                             @if ($loop->first)
                                 <td rowspan="{{ count($jam_list) }}"><strong>{{ $hari }}</strong></td>
                             @endif
-                            <td class="text-center">@if($showJamKe && $displayJam !== '')<strong>{{ $displayJam }}</strong>@endif</td>
+                            <td class="text-center">
+                                @if($showJamKe && $displayJam !== '')
+                                    <strong>{{ $displayJam }}</strong>
+                                @else
+                                    <span style="opacity: 0.3;">-</span>
+                                @endif
+                            </td>
 
                             @if ($isKeterangan)
                                 <td colspan="{{ $colspanCount }}" class="keterangan-cell {{ $keteranganData['warna_class'] }}" style="text-align: center; vertical-align: middle;">
@@ -141,12 +139,16 @@
                                         data-hari="{{ $hari }}"
                                         data-jam="{{ $jamKey }}"
                                         data-id-waktu="{{ $currentData['id_waktu'] ?? '' }}"
-                                        data-current-id="{{ $currentGuruMapelId }}">
+                                        data-current-id="{{ $currentGuruMapelId }}"
+                                        data-key="{{ $kelas }}-{{ $hari }}-{{ $jamKey }}">
+
                                         <div class="cell-display {{ $isBentrok ? 'bentrok' : '' }}" style="cursor: pointer; min-width: 150px;" onclick="showDropdown(this)">
                                             @if ($currentData)
                                                 <strong>{{ $currentData['guru'] }}</strong><br>
                                                 <small>{{ $currentData['mapel'] }}</small>
-                                                @if ($isBentrok)<br><span class="badge bg-danger">Bentrok!</span>@endif
+                                                @if ($isBentrok)
+                                                    <br><span class="badge bg-danger">Bentrok!</span>
+                                                @endif
                                             @else
                                                 <span class="text-muted">- Klik untuk isi -</span>
                                             @endif
@@ -162,7 +164,9 @@
                 @else
                     <tr>
                         <td><strong>{{ $hari }}</strong></td>
-                        <td colspan="{{ $kelas_list->count() + 1 }}" class="text-muted text-center">Tidak ada jadwal untuk hari {{ $hari }}</td>
+                        <td colspan="{{ $kelas_list->count() + 1 }}" class="text-muted text-center">
+                            Tidak ada jadwal untuk hari {{ $hari }}
+                        </td>
                     </tr>
                 @endif
             @endforeach

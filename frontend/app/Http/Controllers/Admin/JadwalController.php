@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\Waktu; // Import model Waktu
+use App\Models\Waktu;
 
 class JadwalController extends Controller
 {
@@ -18,10 +18,15 @@ class JadwalController extends Controller
         $fitness_history = session('fitness_history');
         $generasi = session('generasi');
 
-        // Ambil SEMUA data waktu dari database - URUTKAN BERDASARKAN ID
-        $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();  // <-- URUTKAN ID
+        $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();
 
-        // Ambil daftar id_waktu yang dikirim API
+        $target_mapel = $this->hitungTargetJamMapel();
+        $target_beban_guru = $this->hitungTargetBebanGuru();
+
+        $getWarnaByKeterangan = function($teks) {
+            return $this->getWarnaByKeterangan($teks);
+        };
+
         $availableIds = [];
         if ($jadwal && !empty($jadwal)) {
             $availableIds = collect($jadwal)
@@ -35,12 +40,65 @@ class JadwalController extends Controller
             'jadwal',
             'fitness',
             'fitness_history',
+            'target_mapel',
+            'target_beban_guru',
             'generasi',
             'semuaWaktu',
-            'availableIds'
+            'availableIds',
+            'getWarnaByKeterangan'
         ));
     }
 
+    private function getWarnaByKeterangan($teks)
+    {
+        $teksLower = strtolower($teks);
+        if (strpos($teksLower, 'istirahat') !== false || strpos($teksLower, 'ishoma') !== false) {
+            return 'kuning-cerah';
+        }
+        return 'biru-cerah';
+    }
+
+    private function hitungTargetBebanGuru()
+    {
+        $targetBebanGuru = [];
+
+        $guruMapels = DB::table('guru_mapel')
+            ->join('mapel', 'guru_mapel.id_mapel', '=', 'mapel.id_mapel')
+            ->join('guru', 'guru_mapel.id_guru', '=', 'guru.id_guru')
+            ->where('guru_mapel.aktif', 'aktif')
+            ->select(
+                'guru.nama_guru',
+                'mapel.nama_mapel',
+                'mapel.jam_per_minggu',
+                'guru_mapel.id_guru'
+            )
+            ->get();
+
+        foreach ($guruMapels as $gm) {
+            $namaGuru = $gm->nama_guru;
+            if (!isset($targetBebanGuru[$namaGuru])) {
+                $targetBebanGuru[$namaGuru] = 0;
+            }
+            $targetBebanGuru[$namaGuru] += $gm->jam_per_minggu;
+        }
+
+        return $targetBebanGuru;
+    }
+
+    private function hitungTargetJamMapel()
+    {
+        $targetMapel = [];
+
+        // Ambil semua mapel aktif beserta jam_per_minggunya
+        $mapels = DB::table('mapel')
+            ->get();
+
+        foreach ($mapels as $mapel) {
+            $targetMapel[$mapel->nama_mapel] = $mapel->jam_per_minggu;
+        }
+
+        return $targetMapel;
+    }
 
     public function generate()
     {
@@ -68,19 +126,12 @@ class JadwalController extends Controller
             session(['fitness_best' => $data['fitness_best']]);
             session(['fitness_history' => $data['fitness_history']]);
             session(['generasi' => $data['generasi']]);
-            session(['target_mapel' => $data['target_mapel']]);
-            session(['target_beban_guru' => $data['target_beban_guru']]);
 
             return redirect()->route('generate-jadwal')->with('success', 'Jadwal berhasil digenerate! Fitness: ' . $data['fitness_best']);
         } catch (\Exception $e) {
             return redirect()->route('generate-jadwal')->with('error', 'Gagal terhubung ke API Python: ' . $e->getMessage());
         }
     }
-
-    /**
-     * Merge waktu khusus dari database (termasuk yang jam_ke = NULL)
-     */
-    // Di JadwalController.php
 
     private function mergeWaktuKhususDariDB($jadwalFromAPI)
     {
@@ -193,18 +244,6 @@ class JadwalController extends Controller
         }
     }
 
-    // Endpoint untuk cek status API Python
-    public function cekStatus()
-    {
-        try {
-            $response = Http::timeout(5)->get('http://127.0.0.1:8001/status');
-            return response()->json($response->json());
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
-        }
-    }
-
-    // Di controller (JadwalController.php)
     public function getGuruMapelOptions()
     {
         try {
@@ -235,7 +274,6 @@ class JadwalController extends Controller
         }
     }
 
-    // Di JadwalController.php
     public function updateCell(Request $request)
     {
         try {
@@ -256,14 +294,27 @@ class JadwalController extends Controller
                 ]);
             }
 
+            Log::info('Update Cell Request:', [
+                'kelas' => $kelas,
+                'hari' => $hari,
+                'jam' => $jam,
+                'id_waktu' => $idWaktu,
+                'new_id' => $newGuruMapelId,
+                'old_id' => $oldGuruMapelId
+            ]);
+
             // Cari dan update jadwal
             $updated = false;
             foreach ($jadwal as &$item) {
+                // Cek berdasarkan kelas, hari, dan jam (atau id_waktu)
+                $matchJam = ($item['jam'] == $jam) || ($item['id_waktu'] == $idWaktu);
+
                 if (
                     $item['kelas'] == $kelas &&
                     $item['hari'] == $hari &&
-                    $item['jam'] == $jam
+                    $matchJam
                 ) {
+
                     $item['id_guru_mapel'] = $newGuruMapelId;
 
                     // Update guru dan mapel berdasarkan id_guru_mapel
@@ -277,6 +328,9 @@ class JadwalController extends Controller
                         if ($guruMapel) {
                             $item['guru'] = $guruMapel->nama_guru;
                             $item['mapel'] = $guruMapel->nama_mapel;
+                        } else {
+                            $item['guru'] = '';
+                            $item['mapel'] = '';
                         }
                     } else {
                         $item['guru'] = '';
@@ -284,6 +338,7 @@ class JadwalController extends Controller
                     }
 
                     $updated = true;
+                    Log::info('Item updated:', $item);
                     break;
                 }
             }
@@ -294,20 +349,20 @@ class JadwalController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'updated_jadwal' => true
+                    'message' => 'Jadwal berhasil diupdate'
                 ]);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Data jadwal tidak ditemukan'
+                'message' => 'Data jadwal tidak ditemukan. Kelas: ' . $kelas . ', Hari: ' . $hari . ', Jam: ' . $jam
             ]);
         } catch (\Exception $e) {
+            Log::error('Error update cell: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
             ]);
         }
     }
-
 }
