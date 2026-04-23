@@ -226,7 +226,7 @@ class GuruMapelSeeder extends Seeder
 
         foreach ($guruMapelData as $data) {
             DB::table('guru_mapel')->insert([
-                'id' => $data[0],
+                'id_guru_mapel' => $data[0],
                 'id_guru' => $data[1],
                 'id_mapel' => $data[2],
                 'id_kelas' => $data[3],

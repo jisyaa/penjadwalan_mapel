@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id_mapel');
             $table->string('nama_mapel');
             $table->integer('jam_per_minggu');
-            $table->integer('kategori');
+            $table->string('kategori');
         });
     }
 

@@ -50,8 +50,7 @@ class RuangSeeder extends Seeder
                 'id_ruang' => $data[0],
                 'nama_ruang' => $data[1],
                 'tipe' => $data[2],
-                'kapasitas' => $data[3],
-                'mapel' => $data[4]
+                'kapasitas' => $data[3]
             ]);
         }
     }
