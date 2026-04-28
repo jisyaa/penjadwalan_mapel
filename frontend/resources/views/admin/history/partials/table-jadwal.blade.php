@@ -34,16 +34,34 @@
         }
     }
 
-    $kelas_list = collect($jadwal)
+    // =====================================================
+    // URUTKAN KELAS BERDASARKAN ID KELAS
+    // =====================================================
+    // Ambil daftar kelas unik beserta id_kelas dari data jadwal
+    $kelasWithId = collect($jadwal)
         ->where('is_keterangan', '!=', true)
         ->whereNotNull('kelas')
-        ->pluck('kelas')
-        ->unique()
-        ->sort()
+        ->map(function($item) {
+            return [
+                'kelas' => $item['kelas'],
+                'id_kelas' => $item['id_kelas'] ?? 0
+            ];
+        })
+        ->unique('kelas')
         ->values();
 
+    // Urutkan berdasarkan id_kelas
+    $kelasWithId = $kelasWithId->sortBy('id_kelas');
+
+    // Ambil hanya nama kelas saja untuk $kelas_list
+    $kelas_list = $kelasWithId->pluck('kelas');
+
+    // Jika tidak ada kelas, gunakan default
     if ($kelas_list->isEmpty()) {
-        $kelas_list = collect(['IX A', 'IX B', 'IX C']);
+        // Ambil semua kelas dari database dan urutkan berdasarkan id_kelas
+        $kelas_list = DB::table('kelas')
+            ->orderBy('id_kelas', 'asc')
+            ->pluck('nama_kelas');
     }
 
     $jam_list_per_hari = [];
@@ -80,7 +98,8 @@
                         <thead>
                             <tr>
                                 <th style="width: 100px">Hari</th>
-                                <th style="width: 120px">Jam Ke / Waktu</th> {{-- Ubah judul kolom --}}
+                                <th style="width: 120px">Jam Ke</th>
+                                <th style="width: 120px">Waktu</th>
                                 @foreach ($kelas_list as $kelas)
                                     <th style="min-width: 150px">{{ $kelas }}</th>
                                 @endforeach
@@ -153,7 +172,6 @@
                                                 </td>
                                             @endif
 
-                                            {{-- Kolom Jam Ke + Waktu --}}
                                             <td class="text-center">
                                                 @if ($showJamKe && $displayJam !== '')
                                                     <strong>{{ $displayJam }}</strong>

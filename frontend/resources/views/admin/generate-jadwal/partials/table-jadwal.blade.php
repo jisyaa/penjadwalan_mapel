@@ -42,7 +42,6 @@
             ->whereNotNull('kelas')
             ->pluck('kelas')
             ->unique()
-            ->sort()
             ->values();
 
         if ($kelas_list->isEmpty()) {

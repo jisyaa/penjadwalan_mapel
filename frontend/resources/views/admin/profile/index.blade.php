@@ -1,8 +1,8 @@
-@extends('admin')
+@extends('admin.index')
 
 @section('content')
 <div class="page-header">
-    <h3 class="page-title">My Profile</h3>
+    <h3 class="page-title">Profil Saya</h3>
 </div>
 
 @if (session('success'))

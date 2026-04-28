@@ -1,4 +1,4 @@
-@extends('admin')
+@extends('admin.index')
 
 @section('content')
     <div class="page-header">
@@ -22,7 +22,7 @@
                 <div class="card-body">
                     <h4 class="card-title">Form Edit Data Guru Mapel</h4>
                     <form class="forms-sample" method="post"
-                        action="{{ route('guru_mapel.update', ['id' => $data_guru_mapel->id]) }}" enctype="multipart/form-data">
+                        action="{{ route('guru_mapel.update', ['id' => $data_guru_mapel->id_guru_mapel]) }}" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
                         @if ($errors->any())

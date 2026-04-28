@@ -79,7 +79,7 @@ class GuruMapelController extends Controller
     public function edit(Request $request, string $id)
     {
 
-        $data_guru_mapel = GuruMapel::where('id', $id)->first();
+        $data_guru_mapel = GuruMapel::where('id_guru_mapel', $id)->first();
         $data_guru = Guru::all();
         $data_mapel = Mapel::all();
         $data_kelas = Kelas::all();
@@ -116,7 +116,7 @@ class GuruMapelController extends Controller
 
     public function delete(Request $request, string $id)
     {
-        $data_guru_mapel = GuruMapel::where('id', $id)->first();
+        $data_guru_mapel = GuruMapel::where('id_guru_mapel', $id)->first();
 
         if ($data_guru_mapel) {
             $data_guru_mapel->delete();

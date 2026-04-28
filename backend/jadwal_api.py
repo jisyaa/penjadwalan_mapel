@@ -7,6 +7,11 @@ from collections import defaultdict
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
+import os
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -875,7 +880,261 @@ class PenjadwalanGenetika:
             'jadwal': output
         }
     
-    def jalankan(self, populasi_size=150, generasi=1000):
+    def konversi_ke_df_full_jadwal(self, jadwal_dict):
+        """Konversi jadwal ke format matrix (Hari x Kelas) untuk Excel - dengan nama"""
+        matrix_data = []
+        hari_list = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+        
+        if not self.data or not self.data.get('kelas_list'):
+            return pd.DataFrame({'Kelas': [], 'Status': ['Data tidak tersedia']})
+        
+        # Buat header (kolom waktu per hari)
+        waktu_headers = []
+        for hari in hari_list:
+            for slot in range(self.data['total_jam']):
+                waktu_info = self.data['slot_to_waktu_info'].get(slot, {})
+                if waktu_info.get('hari') == hari:
+                    jam = waktu_info.get('jam', '')
+                    waktu_mulai = waktu_info.get('waktu_mulai', '')
+                    header = f"{hari}\nJam {jam}\n{str(waktu_mulai)[:5] if waktu_mulai else ''}"
+                    waktu_headers.append(header)
+        
+        for id_kelas in self.data['kelas_list']:
+            nama_kelas = self.data['id_kelas_to_nama'].get(id_kelas, str(id_kelas))
+            row = {'Kelas': nama_kelas}
+            
+            col_idx = 0
+            for hari in hari_list:
+                for slot in range(self.data['total_jam']):
+                    waktu_info = self.data['slot_to_waktu_info'].get(slot, {})
+                    if waktu_info.get('hari') == hari:
+                        id_guru_mapel = None
+                        if id_kelas in jadwal_dict and slot < len(jadwal_dict[id_kelas]):
+                            id_guru_mapel = jadwal_dict[id_kelas][slot]
+                        
+                        if id_guru_mapel and id_guru_mapel in self.data.get('guru_mapel_info', {}):
+                            info = self.data['guru_mapel_info'][id_guru_mapel]
+                            if len(info) >= 5:
+                                nama_guru = info[3]
+                                nama_mapel = info[4]
+                                row[waktu_headers[col_idx]] = f"{nama_mapel}\n({nama_guru})"
+                            else:
+                                row[waktu_headers[col_idx]] = f"Mapel {info[0]}\n(Guru {info[1]})"
+                        else:
+                            keterangan = waktu_info.get('keterangan', '')
+                            if keterangan:
+                                row[waktu_headers[col_idx]] = f"**{keterangan}**"
+                            else:
+                                row[waktu_headers[col_idx]] = "-"
+                        col_idx += 1
+            
+            matrix_data.append(row)
+        
+        if not matrix_data:
+            return pd.DataFrame({'Kelas': ['Tidak ada data'], 'Status': ['Jadwal kosong']})
+        
+        return pd.DataFrame(matrix_data)
+
+
+    def konversi_ke_df_detail_jadwal(self, jadwal_dict):
+        """Konversi jadwal ke detail DataFrame untuk Excel - dengan nama lengkap"""
+        rows = []
+        
+        # Validasi data
+        if not self.data or not self.data.get('kelas_list'):
+            return pd.DataFrame({'Status': ['Data tidak tersedia']})
+        
+        for id_kelas in self.data['kelas_list']:
+            nama_kelas = self.data['id_kelas_to_nama'].get(id_kelas, str(id_kelas))
+            for slot in range(self.data['total_jam']):
+                waktu_info = self.data['slot_to_waktu_info'].get(slot, {})
+                hari = waktu_info.get('hari', '')
+                jam = waktu_info.get('jam', '')
+                waktu_mulai = waktu_info.get('waktu_mulai', '')
+                waktu_selesai = waktu_info.get('waktu_selesai', '')
+                keterangan = waktu_info.get('keterangan', '')
+                
+                # Ambil id_guru_mapel dari jadwal
+                id_guru_mapel = None
+                if id_kelas in jadwal_dict and slot < len(jadwal_dict[id_kelas]):
+                    id_guru_mapel = jadwal_dict[id_kelas][slot]
+                
+                # Jika ada guru_mapel, ambil nama guru dan mapel
+                if id_guru_mapel and id_guru_mapel in self.data.get('guru_mapel_info', {}):
+                    info = self.data['guru_mapel_info'][id_guru_mapel]
+                    # info = (id_mapel, id_guru, id_guru_mapel, nama_guru, nama_mapel)
+                    if len(info) >= 5:
+                        nama_guru = info[3]  # Nama guru
+                        nama_mapel = info[4]  # Nama mapel
+                    else:
+                        nama_guru = self.data['id_guru_to_nama'].get(info[1], str(info[1])) if len(info) > 1 else str(id_guru_mapel)
+                        nama_mapel = self.data['id_mapel_to_nama'].get(info[0], str(info[0])) if len(info) > 0 else str(id_guru_mapel)
+                    
+                    rows.append({
+                        'Kelas': nama_kelas,
+                        'Hari': hari,
+                        'Jam Ke': jam if jam is not None else '',
+                        'Waktu': f"{str(waktu_mulai)[:5] if waktu_mulai else ''}-{str(waktu_selesai)[:5] if waktu_selesai else ''}",
+                        'Mata Pelajaran': nama_mapel,
+                        'Guru': nama_guru,
+                        'Keterangan': ''
+                    })
+                elif keterangan:
+                    rows.append({
+                        'Kelas': nama_kelas,
+                        'Hari': hari,
+                        'Jam Ke': jam if jam is not None else '',
+                        'Waktu': f"{str(waktu_mulai)[:5] if waktu_mulai else ''}-{str(waktu_selesai)[:5] if waktu_selesai else ''}",
+                        'Mata Pelajaran': '',
+                        'Guru': '',
+                        'Keterangan': keterangan
+                    })
+                # Skip slot kosong tanpa keterangan
+        
+        if not rows:
+            return pd.DataFrame({'Status': ['Belum ada jadwal untuk ditampilkan']})
+        
+        return pd.DataFrame(rows)
+
+
+    def konversi_ke_df_bentrok(self, jadwal_dict):
+        """Konversi bentrok guru ke DataFrame"""
+        bentrok_list = []
+        
+        # Validasi data
+        if not self.data or not self.data.get('kelas_list'):
+            return pd.DataFrame({'Status': ['Data tidak tersedia']})
+        
+        for slot in range(self.data['total_jam']):
+            guru_di_slot = {}
+            for id_kelas in self.data['kelas_list']:
+                id_guru_mapel = jadwal_dict.get(id_kelas, [None] * self.data['total_jam'])[slot] if slot < len(jadwal_dict.get(id_kelas, [])) else None
+                if id_guru_mapel and id_guru_mapel in self.data.get('guru_mapel_info', {}):
+                    id_guru = self.data['guru_mapel_info'][id_guru_mapel][1]
+                    nama_guru = self.data['id_guru_to_nama'].get(id_guru, str(id_guru))
+                    nama_kelas = self.data['id_kelas_to_nama'].get(id_kelas, str(id_kelas))
+                    
+                    if id_guru in guru_di_slot:
+                        waktu_info = self.data['slot_to_waktu_info'].get(slot, {})
+                        bentrok_list.append({
+                            'Hari': waktu_info.get('hari', ''),
+                            'Jam Ke': waktu_info.get('jam', ''),
+                            'Guru': nama_guru,
+                            'Kelas': f"{guru_di_slot[id_guru]} & {nama_kelas}"
+                        })
+                    else:
+                        guru_di_slot[id_guru] = nama_kelas
+        
+        if not bentrok_list:
+            return pd.DataFrame({'Status': ['Tidak ada bentrok guru']})
+        
+        return pd.DataFrame(bentrok_list)
+
+
+    def konversi_ke_df_analisis_jam_mapel(self, jadwal_dict):
+        """Konversi analisis jam mapel ke DataFrame"""
+        jam_mapel = self.hitung_jam_mapel_per_kelas(jadwal_dict)
+        rows = []
+        
+        # Validasi data
+        if not self.data or not self.data.get('kelas_list'):
+            return pd.DataFrame({'Status': ['Data tidak tersedia']})
+        
+        for id_kelas in self.data['kelas_list']:
+            nama_kelas = self.data['id_kelas_to_nama'].get(id_kelas, str(id_kelas))
+            for id_mapel, target in self.data['mapel_beban'].items():
+                aktual = jam_mapel.get(id_kelas, {}).get(id_mapel, 0)
+                nama_mapel = self.data['id_mapel_to_nama'].get(id_mapel, str(id_mapel))
+                rows.append({
+                    'Kelas': nama_kelas,
+                    'Mata Pelajaran': nama_mapel,
+                    'Target Jam': target,
+                    'Aktual Jam': aktual,
+                    'Selisih': aktual - target,
+                    'Status': 'Sesuai' if aktual == target else ('Kelebihan' if aktual > target else 'Kekurangan')
+                })
+        
+        if not rows:
+            return pd.DataFrame({'Status': ['Belum ada data analisis']})
+        
+        return pd.DataFrame(rows)
+
+
+    def konversi_ke_df_beban_guru(self, jadwal_dict):
+        """Konversi beban guru ke DataFrame"""
+        beban_aktual = defaultdict(int)
+        
+        # Validasi data
+        if not self.data or not self.data.get('kelas_list'):
+            return pd.DataFrame({'Status': ['Data tidak tersedia']})
+        
+        for id_kelas in self.data['kelas_list']:
+            for slot in range(self.data['total_jam']):
+                id_guru_mapel = jadwal_dict.get(id_kelas, [None] * self.data['total_jam'])[slot] if slot < len(jadwal_dict.get(id_kelas, [])) else None
+                if id_guru_mapel and id_guru_mapel in self.data.get('guru_mapel_info', {}):
+                    id_guru = self.data['guru_mapel_info'][id_guru_mapel][1]
+                    beban_aktual[id_guru] += 1
+        
+        rows = []
+        for id_guru, target in self.data['guru_beban'].items():
+            aktual = beban_aktual.get(id_guru, 0)
+            nama_guru = self.data['id_guru_to_nama'].get(id_guru, str(id_guru))
+            rows.append({
+                'Nama Guru': nama_guru,
+                'Target Jam': target,
+                'Aktual Jam': aktual,
+                'Selisih': aktual - target,
+                'Status': 'Sesuai' if aktual == target else ('Overload' if aktual > target else 'Underload')
+            })
+        
+        if not rows:
+            return pd.DataFrame({'Status': ['Belum ada data beban guru']})
+        
+        return pd.DataFrame(rows)
+
+
+    def save_generation_to_excel(self, generation, jadwal_dict, fitness, run_folder):
+        """Menyimpan hasil generasi ke file Excel - dipanggil setiap generasi"""
+        filename = f"generasi_{generation:04d}_fitness_{int(fitness)}.xlsx"
+        filepath = os.path.join(run_folder, filename)
+        
+        # Buat semua DataFrames dengan data yang sudah diproses
+        df_full = self.konversi_ke_df_full_jadwal(jadwal_dict)
+        df_detail = self.konversi_ke_df_detail_jadwal(jadwal_dict)
+        df_bentrok = self.konversi_ke_df_bentrok(jadwal_dict)
+        df_analisis = self.konversi_ke_df_analisis_jam_mapel(jadwal_dict)
+        df_beban = self.konversi_ke_df_beban_guru(jadwal_dict)
+        
+        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+            # Sheet 1: Full Jadwal Matrix (Kelas vs Waktu)
+            df_full.to_excel(writer, sheet_name='Full Jadwal', index=False)
+            
+            # Sheet 2: Detail Jadwal per slot
+            df_detail.to_excel(writer, sheet_name='Detail Jadwal', index=False)
+            
+            # Sheet 3: Informasi Bentrok Guru
+            df_bentrok.to_excel(writer, sheet_name='Bentrok Guru', index=False)
+            
+            # Sheet 4: Analisis Jam Mapel
+            df_analisis.to_excel(writer, sheet_name='Analisis Jam Mapel', index=False)
+            
+            # Sheet 5: Beban Mengajar Guru
+            df_beban.to_excel(writer, sheet_name='Beban Guru', index=False)
+            
+            # Sheet 6: Informasi Generasi
+            info_df = pd.DataFrame([
+                ['Generasi ke', generation],
+                ['Fitness', fitness],
+                ['Total Kelas', len(self.data.get('kelas_list', []))],
+                ['Total Jam', self.data.get('total_jam', 0)],
+                ['Timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+            ], columns=['Informasi', 'Nilai'])
+            info_df.to_excel(writer, sheet_name='Informasi', index=False)
+        
+        print(f"  📁 Saved: {filepath}")
+        return filepath
+    
+    def jalankan(self, populasi_size=30, generasi=100, save_every=1):
         """Menjalankan algoritma genetika"""
         print("=" * 50)
         print("Memuat data dari database...")
@@ -903,7 +1162,14 @@ class PenjadwalanGenetika:
         self.fitness_history = []
         self.best_fitness = float('inf')
         best_individual = None
-        
+
+        # Buat folder result dengan timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_folder = os.path.join("result", f"run_{timestamp}")
+        if not os.path.exists(run_folder):
+            os.makedirs(run_folder)
+        print(f"📁 Hasil akan disimpan di: {run_folder}")
+            
         # Inisialisasi populasi
         print("Membuat populasi awal dengan clustering...")
         try:
@@ -915,7 +1181,8 @@ class PenjadwalanGenetika:
         
         print(f"Populasi berhasil dibuat: {len(populasi)} individu")
         print("Menjalankan algoritma genetika...")
-        
+        print("-" * 50)
+    
         for gen in range(generasi):
             fitness_scores = []
             
@@ -928,6 +1195,10 @@ class PenjadwalanGenetika:
                     if fit < self.best_fitness:
                         self.best_fitness = fit
                         best_individual = ind.copy()
+
+                        # EXPORT SETIAP ADA PENINGKATAN FITNESS
+                        best_jadwal_dict = self.decode_jadwal(best_individual)
+                        self.save_generation_to_excel(gen, best_jadwal_dict, self.best_fitness, run_folder)
                 except Exception as e:
                     print(f"Error evaluasi fitness: {e}")
                     fitness_scores.append(float('inf'))
@@ -993,6 +1264,7 @@ class PenjadwalanGenetika:
             print(f"Error konversi jadwal: {e}")
             return None, None, None
         
+        print(f"\n📁 Semua hasil tersimpan di folder: {run_folder}")
         print(f"Selesai! Fitness terakhir: {self.best_fitness}")
         
         return self.best_jadwal, self.best_fitness, self.fitness_history
@@ -1011,8 +1283,8 @@ penjadwal = PenjadwalanGenetika(DB_CONFIG)
 def generate_jadwal():
     """Endpoint untuk generate jadwal"""
     try:
-        populasi_size = request.args.get('populasi_size', 300, type=int)
-        generasi = request.args.get('generasi', 1000, type=int)
+        populasi_size = request.args.get('populasi_size', 30, type=int)
+        generasi = request.args.get('generasi', 100, type=int)
         
         print(f"\n{'='*50}")
         print(f"REQUEST GENERATE JADWAL")
@@ -1022,7 +1294,8 @@ def generate_jadwal():
         # Jalankan algoritma
         jadwal, fitness, history = penjadwal.jalankan(
             populasi_size=populasi_size,
-            generasi=generasi
+            generasi=generasi,
+            save_every=1
         )
         
         if jadwal is None:

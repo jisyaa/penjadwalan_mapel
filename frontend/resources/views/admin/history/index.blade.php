@@ -1,9 +1,9 @@
-@extends('admin')
+@extends('admin.index')
 
 @section('content')
     <div class="page-header">
         <div class="d-flex justify-content-between align-items-center">
-            <h3 class="page-title mb-0">History Jadwal</h3>
+            <h3 class="page-title mb-0">Riwayat Jadwal</h3>
             <a href="{{ route('generate-jadwal') }}" class="btn btn-primary">
                 <i class="mdi mdi-plus"></i> Generate Jadwal Baru
             </a>

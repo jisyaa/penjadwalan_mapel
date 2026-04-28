@@ -143,7 +143,7 @@ class HistoryJadwalController extends Controller
                         'hari' => $wkt->hari,
                         'jam' => null,
                         'jam_ke' => $wkt->jam_ke,
-                        'waktu_mulai' => $wkt->waktu_mulai,   
+                        'waktu_mulai' => $wkt->waktu_mulai,
                         'waktu_selesai' => $wkt->waktu_selesai,
                         'keterangan' => $wkt->keterangan,
                         'is_keterangan' => true

@@ -1,16 +1,18 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GuruController;
 use App\Http\Controllers\Admin\GuruMapelController;
 use App\Http\Controllers\Admin\HistoryJadwalController;
 use App\Http\Controllers\Admin\JadwalController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\MapelController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\RuangController;
 use App\Http\Controllers\Admin\WaktuController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Landing\JadwalPreviewController;
+use App\Http\Controllers\Landing\LandingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,6 +29,18 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/', function () {
 //     return view('admin');
 // });
+
+Route::group([], function () {
+    Route::get('/', [LandingController::class, 'index'])->name('landing');
+    Route::get('/tentang', [LandingController::class, 'tentang'])->name('tentang');
+    Route::get('/fitur', [LandingController::class, 'fitur'])->name('fitur');
+    Route::get('/statistik', [LandingController::class, 'statistik'])->name('statistik');
+    Route::get('/kontak', [LandingController::class, 'kontak'])->name('kontak');
+    Route::get('/jadwal-preview', [JadwalPreviewController::class, 'index'])->name('jadwal.preview');
+    Route::get('/api/jadwal-full', [JadwalPreviewController::class, 'getFullJadwal'])->name('api.jadwal.full');
+    Route::get('/api/jadwal-by-kelas', [JadwalPreviewController::class, 'getJadwalByKelas'])->name('api.jadwal.by-kelas');
+    Route::get('/api/jadwal-by-guru', [JadwalPreviewController::class, 'getJadwalByGuru'])->name('api.jadwal.by-guru');
+});
 
 Route::group([], function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

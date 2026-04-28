@@ -141,7 +141,7 @@
             color: white;
         }
 
-        .card-header h3 {
+        .card-header h4 {
             color: white;
             font-size: 22px;
             font-weight: 700;
@@ -384,7 +384,7 @@
                 padding: 20px;
             }
 
-            .card-header h3 {
+            .card-header h4 {
                 font-size: 24px;
             }
         }
@@ -423,8 +423,7 @@
                 <div class="logo-icon">
                     <i class="fas fa-calendar-alt"></i>
                 </div>
-                <h3>Selamat Datang</h3>
-                <p>Sistem Penjadwalan Mata Pelajaran</p>
+                <h4>Sistem Penjadwalan Mata Pelajaran</h>
                 <p>SMPN 1 Enam Lingkung</p>
             </div>
 
@@ -479,7 +478,7 @@
 
                     <button type="submit" class="btn-login" id="btnLogin">
                         <i class="fas fa-sign-in-alt"></i>
-                        <span>Masuk ke Dashboard</span>
+                        <span>Masuk</span>
                     </button>
                 </form>
             </div>

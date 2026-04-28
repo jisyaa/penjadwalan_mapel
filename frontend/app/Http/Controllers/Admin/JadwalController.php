@@ -26,6 +26,16 @@ class JadwalController extends Controller
             $waktuMap[$w->id_waktu] = $w;
         }
 
+        $kelasData = DB::table('kelas')->pluck('nama_kelas', 'id_kelas');
+
+        if ($jadwal && !empty($jadwal)) {
+            foreach ($jadwal as &$item) {
+                if (isset($item['id_kelas'])) {
+                    $item['kelas'] = $kelasData[$item['id_kelas']] ?? '-';
+                }
+            }
+        }
+
         // Tambahkan waktu_mulai dan waktu_selesai ke data jadwal jika ada
         if ($jadwal && !empty($jadwal)) {
             foreach ($jadwal as &$item) {
@@ -62,7 +72,7 @@ class JadwalController extends Controller
             'semuaWaktu',
             'availableIds',
             'getWarnaByKeterangan',
-            'waktuMap'  // Tambahkan ini
+            'waktuMap'
         ));
     }
 

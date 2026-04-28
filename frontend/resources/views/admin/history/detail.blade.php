@@ -1,4 +1,4 @@
-@extends('admin')
+@extends('admin.index')
 
 @include('admin.history.partials.styles')
 
