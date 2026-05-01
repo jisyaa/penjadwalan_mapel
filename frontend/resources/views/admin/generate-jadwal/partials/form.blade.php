@@ -2,7 +2,10 @@
     <b>Hasil Genetic Algorithm</b><br>
     Fitness Terbaik : <b>{{ $fitness ?? 'N/A' }}</b><br>
     Jumlah Generasi : <b>{{ $generasi ?? 'N/A' }}</b><br>
-    Total Data : <b>{{ count($jadwal) }}</b>
+    Total Data : <b>{{ count($jadwal) }}</b><br>
+    @if(isset($execution_time))
+        ⏱️ Waktu Eksekusi : <b>{{ $execution_time['formatted'] ?? $execution_time }}</b><br>
+    @endif
 </div>
 
 @if (isset($fitness_history) && count($fitness_history) > 0)

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\WaktuController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Landing\JadwalPreviewController;
 use App\Http\Controllers\Landing\LandingController;
+use App\Http\Controllers\Landing\PrintController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -40,6 +41,9 @@ Route::group([], function () {
     Route::get('/api/jadwal-full', [JadwalPreviewController::class, 'getFullJadwal'])->name('api.jadwal.full');
     Route::get('/api/jadwal-by-kelas', [JadwalPreviewController::class, 'getJadwalByKelas'])->name('api.jadwal.by-kelas');
     Route::get('/api/jadwal-by-guru', [JadwalPreviewController::class, 'getJadwalByGuru'])->name('api.jadwal.by-guru');
+    Route::get('/print/full-jadwal', [PrintController::class, 'printFullJadwal'])->name('print.full-jadwal');
+    Route::get('/print/jadwal-kelas', [PrintController::class, 'printJadwalByKelas'])->name('print.jadwal-kelas');
+    Route::get('/print/jadwal-guru', [PrintController::class, 'printJadwalByGuru'])->name('print.jadwal-guru');
 });
 
 Route::group([], function () {

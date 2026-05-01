@@ -17,6 +17,7 @@ class JadwalController extends Controller
         $fitness = session('fitness_best');
         $fitness_history = session('fitness_history');
         $generasi = session('generasi');
+        $execution_time = session('execution_time');
 
         $semuaWaktu = Waktu::orderBy('id_waktu', 'asc')->get();
 
@@ -72,7 +73,8 @@ class JadwalController extends Controller
             'semuaWaktu',
             'availableIds',
             'getWarnaByKeterangan',
-            'waktuMap'
+            'waktuMap',
+            'execution_time'
         ));
     }
 
@@ -132,7 +134,7 @@ class JadwalController extends Controller
         set_time_limit(0);
 
         try {
-            session()->forget(['jadwal_generate', 'fitness_best', 'fitness_history', 'generasi', 'target_mapel', 'target_beban_guru']);
+            session()->forget(['jadwal_generate', 'fitness_best', 'fitness_history', 'generasi', 'target_mapel', 'target_beban_guru', 'execution_time']);
 
             $response = Http::timeout(0)
                 ->get('http://127.0.0.1:8001/generate-jadwal', [
@@ -153,6 +155,11 @@ class JadwalController extends Controller
             session(['fitness_best' => $data['fitness_best']]);
             session(['fitness_history' => $data['fitness_history']]);
             session(['generasi' => $data['generasi']]);
+
+            // Simpan waktu eksekusi
+            if (isset($data['execution_time'])) {
+                session(['execution_time' => $data['execution_time']]);
+            }
 
             return redirect()->route('generate-jadwal')->with('success', 'Jadwal berhasil digenerate! Fitness: ' . $data['fitness_best']);
         } catch (\Exception $e) {

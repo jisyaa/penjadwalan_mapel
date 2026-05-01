@@ -21,7 +21,7 @@
                 </div><!-- END COL-->
                 <div class="col-lg-6 col-sm-6 col-xs-12">
                     <div class="home_me_img">
-                        <img src="{{ asset('landing/images/all-img/home-image.png') }}" class="img-fluid" alt="" />
+                        <img src="{{ asset('landing/images/all-img/siswa.png') }}" class="img-fluid" alt="" />
                         <div class="home_ps">
                             <img src="{{ asset('landing/images/icon/user2.svg') }}" alt="" />
                             <h2>19</h2>

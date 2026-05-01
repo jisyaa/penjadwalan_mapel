@@ -1,0 +1,40 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="400" height="400" rx="20" fill="#E8F0FE" />
+
+    <!-- Kalender -->
+    <rect x="80" y="100" width="240" height="200" rx="10" fill="white" stroke="#4F46E5" stroke-width="3" />
+    <!-- Header kalender -->
+    <rect x="80" y="100" width="240" height="50" rx="10" fill="#4F46E5" />
+    <rect x="80" y="130" width="240" height="20" fill="#4F46E5" />
+    <!-- Teks bulan -->
+    <text x="200" y="132" text-anchor="middle" fill="white" font-size="18" font-weight="bold">JADWAL SEKOLAH</text>
+
+    <!-- Tanggal dalam kalender -->
+    <text x="110" y="190" fill="#333" font-size="14">Sen</text>
+    <text x="160" y="190" fill="#333" font-size="14">Sel</text>
+    <text x="210" y="190" fill="#333" font-size="14">Rab</text>
+    <text x="260" y="190" fill="#333" font-size="14">Kam</text>
+
+    <text x="110" y="225" fill="#4F46E5" font-size="16" font-weight="bold">1</text>
+    <text x="160" y="225" fill="#333" font-size="16">2</text>
+    <text x="210" y="225" fill="#333" font-size="16">3</text>
+    <text x="260" y="225" fill="#333" font-size="16">4</text>
+
+    <text x="110" y="260" fill="#333" font-size="16">5</text>
+    <text x="160" y="260" fill="#333" font-size="16">6</text>
+    <text x="210" y="260" fill="#4F46E5" font-size="16" font-weight="bold">7</text>
+    <text x="260" y="260" fill="#333" font-size="16">8</text>
+
+    <!-- Orang/guru -->
+    <circle cx="200" cy="340" r="20" fill="#4F46E5" />
+    <rect x="180" y="360" width="40" height="30" rx="5" fill="#4F46E5" />
+
+    <!-- Jam -->
+    <circle cx="320" cy="80" r="30" fill="none" stroke="#4F46E5" stroke-width="4" />
+    <line x1="320" y1="80" x2="320" y2="65" stroke="#4F46E5" stroke-width="3" stroke-linecap="round" />
+    <line x1="320" y1="80" x2="335" y2="85" stroke="#4F46E5" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Centang checklist -->
+    <polyline points="50,300 70,320 100,285" fill="none" stroke="#10B981" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

@@ -33,6 +33,21 @@
                             <button class="filter-btn" data-filter="guru">
                                 <i class="fa-solid fa-chalkboard-user"></i> Berdasarkan Guru
                             </button>
+
+                            <!-- Tombol Print -->
+                            <div class="dropdown" style="display: inline-block; margin-left: 15px;">
+                                <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fa-solid fa-print"></i> Cetak
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="printFullJadwal()">Cetak Full
+                                            Jadwal</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printJadwalByKelas()">Cetak
+                                            Berdasarkan Kelas</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printJadwalByGuru()">Cetak
+                                            Berdasarkan Guru</a></li>
+                                </ul>
+                            </div>
                         </div>
 
                         <!-- Filter Full (tidak ada filter) -->
@@ -479,20 +494,23 @@
         const container = document.getElementById('jadwalFullContainer');
         if (!container) return;
 
-        container.innerHTML = `<div class="text-center py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Memuat jadwal...</p></div>`;
+        container.innerHTML =
+            `<div class="text-center py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Memuat jadwal...</p></div>`;
 
-        fetch('{{ route("api.jadwal.full") }}')
+        fetch('{{ route('api.jadwal.full') }}')
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.data) {
                     renderFullJadwal(data.data);
                 } else {
-                    container.innerHTML = `<div class="alert alert-warning text-center">${data.message || 'Belum ada jadwal'}</div>`;
+                    container.innerHTML =
+                        `<div class="alert alert-warning text-center">${data.message || 'Belum ada jadwal'}</div>`;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                container.innerHTML = `<div class="alert alert-danger text-center">Terjadi kesalahan saat memuat data</div>`;
+                container.innerHTML =
+                    `<div class="alert alert-danger text-center">Terjadi kesalahan saat memuat data</div>`;
             });
     }
 
@@ -501,20 +519,23 @@
         const container = document.getElementById('jadwalKelasContainer');
         if (!container) return;
 
-        container.innerHTML = `<div class="text-center py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Memuat jadwal...</p></div>`;
+        container.innerHTML =
+            `<div class="text-center py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Memuat jadwal...</p></div>`;
 
-        fetch(`{{ route("api.jadwal.by-kelas") }}?id_kelas=${idKelas}`)
+        fetch(`{{ route('api.jadwal.by-kelas') }}?id_kelas=${idKelas}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.data) {
                     renderJadwalByKelas(data.data);
                 } else {
-                    container.innerHTML = `<div class="alert alert-warning text-center">${data.message || 'Belum ada jadwal untuk kelas ini'}</div>`;
+                    container.innerHTML =
+                        `<div class="alert alert-warning text-center">${data.message || 'Belum ada jadwal untuk kelas ini'}</div>`;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                container.innerHTML = `<div class="alert alert-danger text-center">Terjadi kesalahan saat memuat data</div>`;
+                container.innerHTML =
+                    `<div class="alert alert-danger text-center">Terjadi kesalahan saat memuat data</div>`;
             });
     }
 
@@ -523,20 +544,23 @@
         const container = document.getElementById('jadwalGuruContainer');
         if (!container) return;
 
-        container.innerHTML = `<div class="text-center py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Memuat jadwal...</p></div>`;
+        container.innerHTML =
+            `<div class="text-center py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Memuat jadwal...</p></div>`;
 
-        fetch(`{{ route("api.jadwal.by-guru") }}?id_guru=${idGuru}`)
+        fetch(`{{ route('api.jadwal.by-guru') }}?id_guru=${idGuru}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.data) {
                     renderJadwalByGuru(data.data);
                 } else {
-                    container.innerHTML = `<div class="alert alert-warning text-center">${data.message || 'Belum ada jadwal untuk guru ini'}</div>`;
+                    container.innerHTML =
+                        `<div class="alert alert-warning text-center">${data.message || 'Belum ada jadwal untuk guru ini'}</div>`;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                container.innerHTML = `<div class="alert alert-danger text-center">Terjadi kesalahan saat memuat data</div>`;
+                container.innerHTML =
+                    `<div class="alert alert-danger text-center">Terjadi kesalahan saat memuat data</div>`;
             });
     }
 
@@ -571,17 +595,19 @@
         for (const hari of hariList) {
             const rows = jadwalData[hari] || [];
             if (rows.length === 0) {
-                html += `<tr><td colspan="${kelasList.length + 2}" class="text-center text-muted">Tidak ada jadwal untuk hari ${hari}</td></tr>`;
+                html +=
+                    `<tr><td colspan="${kelasList.length + 2}" class="text-center text-muted">Tidak ada jadwal untuk hari ${hari}</td></tr>`;
             } else {
                 rows.forEach((row, idx) => {
-                    const waktuMulai = row.waktu_mulai ? row.waktu_mulai.substring(0,5) : '';
-                    const waktuSelesai = row.waktu_selesai ? row.waktu_selesai.substring(0,5) : '';
+                    const waktuMulai = row.waktu_mulai ? row.waktu_mulai.substring(0, 5) : '';
+                    const waktuSelesai = row.waktu_selesai ? row.waktu_selesai.substring(0, 5) : '';
 
                     html += `<tr>`;
                     if (idx === 0) {
                         html += `<td rowspan="${rows.length}"><strong>${hari}</strong></td>`;
                     }
-                    html += `<td class="jam-cell">${row.jam_ke}<br><small>${waktuMulai}-${waktuSelesai}</small></td>`;
+                    html +=
+                        `<td class="jam-cell">${row.jam_ke}<br><small>${waktuMulai}-${waktuSelesai}</small></td>`;
 
                     if (row.is_keterangan) {
                         const isKuning = row.keterangan === 'Istirahat' || row.keterangan === 'Ishoma';
@@ -646,15 +672,16 @@
                 html += `<tr><td colspan="4" class="text-center text-muted">Tidak ada jadwal</td></tr>`;
             } else {
                 items.forEach((item, idx) => {
-                    const waktuMulai = item.waktu_mulai ? item.waktu_mulai.substring(0,5) : '';
-                    const waktuSelesai = item.waktu_selesai ? item.waktu_selesai.substring(0,5) : '';
+                    const waktuMulai = item.waktu_mulai ? item.waktu_mulai.substring(0, 5) : '';
+                    const waktuSelesai = item.waktu_selesai ? item.waktu_selesai.substring(0, 5) : '';
                     const isKeterangan = item.is_keterangan;
 
                     html += `<tr>`;
                     if (idx === 0) {
                         html += `<td rowspan="${items.length}"><strong>${hari}</strong></td>`;
                     }
-                    html += `<td class="jam-cell">${item.jam_ke}<br><small>${waktuMulai}-${waktuSelesai}</small></td>`;
+                    html +=
+                        `<td class="jam-cell">${item.jam_ke}<br><small>${waktuMulai}-${waktuSelesai}</small></td>`;
 
                     if (isKeterangan) {
                         const isKuning = item.nama_mapel === 'Istirahat' || item.nama_mapel === 'Ishoma';
@@ -718,8 +745,8 @@
                     html += `<tr class="text-muted"><td colspan="3" class="text-center">Tidak ada jadwal</td></tr>`;
                 } else {
                     items.forEach((item, idx) => {
-                        const waktuMulai = item.waktu_mulai ? item.waktu_mulai.substring(0,5) : '';
-                        const waktuSelesai = item.waktu_selesai ? item.waktu_selesai.substring(0,5) : '';
+                        const waktuMulai = item.waktu_mulai ? item.waktu_mulai.substring(0, 5) : '';
+                        const waktuSelesai = item.waktu_selesai ? item.waktu_selesai.substring(0, 5) : '';
 
                         html += `<tr>`;
                         if (idx === 0) {
@@ -741,5 +768,29 @@
         }
 
         container.innerHTML = html;
+    }
+
+    function printFullJadwal() {
+        window.open('{{ route("print.full-jadwal") }}', '_blank');
+    }
+
+    function printJadwalByKelas() {
+        const kelasSelect = document.getElementById('kelasSelect');
+        const idKelas = kelasSelect ? kelasSelect.value : '';
+        if (idKelas) {
+            window.open('{{ route("print.jadwal-kelas") }}?id_kelas=' + idKelas, '_blank');
+        } else {
+            alert('Pilih kelas terlebih dahulu');
+        }
+    }
+
+    function printJadwalByGuru() {
+        const guruSelect = document.getElementById('guruSelect');
+        const idGuru = guruSelect ? guruSelect.value : '';
+        if (idGuru) {
+            window.open('{{ route("print.jadwal-guru") }}?id_guru=' + idGuru, '_blank');
+        } else {
+            alert('Pilih guru terlebih dahulu');
+        }
     }
 </script>

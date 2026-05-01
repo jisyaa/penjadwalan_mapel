@@ -21,11 +21,15 @@
     <section class="ab_one section-padding">
         <div class="container">
             <div class="row">
-                <div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.1s" data-wow-offset="0">
+                <div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.1s"
+                    data-wow-offset="0">
                     <div class="ab_content">
                         <h2>Sistem Penjadwalan Mata Pelajaran SMPN 1 Enam Lingkung</h2>
-                        <p>EduSchedule adalah sistem penjadwalan mata pelajaran berbasis algoritma genetika yang dirancang khusus untuk membantu sekolah dalam menyusun jadwal pelajaran secara otomatis, efisien, dan bebas konflik.</p>
-                        <p>Sistem ini dikembangkan untuk mengatasi permasalahan bentrok jadwal, distribusi beban guru yang tidak merata, dan kesulitan dalam mengelola perubahan jadwal.</p>
+                        <p>EduSchedule adalah sistem penjadwalan mata pelajaran berbasis algoritma genetika yang dirancang
+                            khusus untuk membantu sekolah dalam menyusun jadwal pelajaran secara otomatis, efisien, dan
+                            bebas konflik.</p>
+                        <p>Sistem ini dikembangkan untuk mengatasi permasalahan bentrok jadwal, distribusi beban guru yang
+                            tidak merata, dan kesulitan dalam mengelola perubahan jadwal.</p>
                     </div>
                     <div class="abmv">
                         <img src="{{ asset('landing/images/all-img/light.svg') }}" alt="" />
@@ -46,9 +50,19 @@
                         </a>
                     </div>
                 </div><!--- END COL -->
-                <div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s" data-wow-offset="0">
+                <div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
+                    data-wow-offset="0">
+                    <div class="ab_img" style="margin-bottom: 30px;">
+                        <img src="{{ asset('landing/images/all-img/sistem-penjadwalan.png') }}" class="img-fluid"
+                            alt="Sistem Penjadwalan">
+                    </div>
+                    <div class="ab_img" style="margin-bottom: 30px;">
+                        <img src="{{ asset('landing/images/all-img/sistem-penjadwalan2.png') }}" class="img-fluid"
+                            alt="Sistem Penjadwalan">
+                    </div>
                     <div class="ab_img">
-                        <img src="{{ asset('landing/images/all-img/about-schedule.png') }}" class="img-fluid" alt="Sistem Penjadwalan">
+                        <img src="{{ asset('landing/images/all-img/sistem-penjadwalan3.png') }}" class="img-fluid"
+                            alt="Sistem Penjadwalan">
                     </div>
                 </div><!--- END COL -->
             </div><!--- END ROW -->
@@ -64,22 +78,26 @@
                 <h1>Tujuan Pengembangan Sistem</h1>
             </div>
             <div class="row">
-                <div class="col-lg-6 col-sm-6 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.1s" data-wow-offset="0">
+                <div class="col-lg-6 col-sm-6 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.1s"
+                    data-wow-offset="0">
                     <div class="single_feature_one">
                         <div class="sf_top">
                             <i class="fa-solid fa-eye"></i>
                             <h2>Visi</h2>
                         </div>
-                        <p>Menjadi sistem penjadwalan terdepan yang membantu institusi pendidikan mengelola jadwal dengan mudah, cepat, dan efisien.</p>
+                        <p>Menjadi sistem penjadwalan terdepan yang membantu institusi pendidikan mengelola jadwal dengan
+                            mudah, cepat, dan efisien.</p>
                     </div>
                 </div><!-- END COL -->
-                <div class="col-lg-6 col-sm-6 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s" data-wow-offset="0">
+                <div class="col-lg-6 col-sm-6 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
+                    data-wow-offset="0">
                     <div class="single_feature_one">
                         <div class="sf_top">
                             <i class="fa-solid fa-flag-checkered"></i>
                             <h2>Misi</h2>
                         </div>
-                        <p>Menyediakan sistem penjadwalan otomatis yang akurat, meminimalisir bentrok jadwal guru, dan memudahkan admin dalam mengelola perubahan jadwal.</p>
+                        <p>Menyediakan sistem penjadwalan otomatis yang akurat, meminimalisir bentrok jadwal guru, dan
+                            memudahkan admin dalam mengelola perubahan jadwal.</p>
                     </div>
                 </div><!-- END COL -->
             </div><!-- END ROW -->
@@ -88,16 +106,19 @@
     <!-- END VISI MISI -->
 
     <!-- START VIDEO DEMO -->
-    <section class="vid_area va2" style="background-image: url('{{ asset('landing/images/banner/video.jpg') }}'); background-size:cover; background-position: center center;">
+    <section class="vid_area va2"
+        style="background-image: url('{{ asset('landing/images/all-img/sistem-penjadwalan.png') }}'); background-size:cover; background-position: center center;">
         <div class="container">
             <div class="row">
-                <div class="col-lg-12 vp_top wow fadeInUDown" data-wow-duration="1s" data-wow-delay="0.2s" data-wow-offset="0">
+                <div class="col-lg-12 vp_top wow fadeInUDown" data-wow-duration="1s" data-wow-delay="0.2s"
+                    data-wow-offset="0">
                     <div class="video-area2">
-                        <a href="https://www.youtube.com/watch?v=RXv_uIN6e-Y" class="magnific_popup video-button"><i class="fa fa-play"></i></a>
-                    </div>
-                </div><!--- END COL -->
-            </div><!--- END ROW -->
-        </div><!--- END CONTAINER -->
+                        <a href="#" class="video-button" data-bs-toggle="modal" data-bs-target="#videoModal">
+                            <i class="fa fa-play"></i>
+                        </a>
+                    </div><!--- END COL -->
+                </div><!--- END ROW -->
+            </div><!--- END CONTAINER -->
     </section>
     <!-- END VIDEO DEMO -->
 
@@ -137,4 +158,31 @@
         </div><!--- END CONTAINER -->
     </section>
     <!-- END COUNTER -->
+
+    <!-- Modal Popup untuk Video Lokal -->
+    <div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <video id="modalVideo" width="100%" controls style="border-radius: 10px;">
+                        <source src="{{ asset('landing/videos/Sistem Penjadwalan Mapel.mp4') }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+<script>
+    // Hentikan video saat modal ditutup
+    document.getElementById('videoModal').addEventListener('hidden.bs.modal', function() {
+        var video = document.getElementById('modalVideo');
+        video.pause();
+        video.currentTime = 0;
+    });
+</script>
