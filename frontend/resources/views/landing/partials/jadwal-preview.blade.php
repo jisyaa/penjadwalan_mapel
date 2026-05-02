@@ -33,21 +33,6 @@
                             <button class="filter-btn" data-filter="guru">
                                 <i class="fa-solid fa-chalkboard-user"></i> Berdasarkan Guru
                             </button>
-
-                            <!-- Tombol Print -->
-                            <div class="dropdown" style="display: inline-block; margin-left: 15px;">
-                                <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    <i class="fa-solid fa-print"></i> Cetak
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="printFullJadwal()">Cetak Full
-                                            Jadwal</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="printJadwalByKelas()">Cetak
-                                            Berdasarkan Kelas</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="printJadwalByGuru()">Cetak
-                                            Berdasarkan Guru</a></li>
-                                </ul>
-                            </div>
                         </div>
 
                         <!-- Filter Full (tidak ada filter) -->
@@ -109,6 +94,11 @@
                         <h1>Full Jadwal Pelajaran</h1>
                         <p>Jadwal semua kelas dalam satu tampilan</p>
                     </div>
+                    <div class="text-center mb-4">
+                        <button class="btn-print" onclick="printFullJadwal()">
+                            <i class="fa-solid fa-print"></i> Cetak Full Jadwal
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -130,6 +120,11 @@
                         <h4>Jadwal Kelas</h4>
                         <h1 id="kelasTitle">Jadwal {{ $kelasList->first()->nama_kelas ?? '' }}</h1>
                         <p>Jadwal pelajaran lengkap per kelas</p>
+                    </div>
+                    <div class="text-center mb-4">
+                        <button class="btn-print" id="btnPrintKelas" onclick="printJadwalByKelas()">
+                            <i class="fa-solid fa-print"></i> Cetak Jadwal Kelas Ini
+                        </button>
                     </div>
                 </div>
             </div>
@@ -156,6 +151,11 @@
                         <h1 id="guruTitle">Jadwal {{ $guruList->first()->nama_guru ?? '' }}</h1>
                         <p>Jadwal mengajar guru per kelas</p>
                     </div>
+                    <div class="text-center mb-4">
+                        <button class="btn-print" id="btnPrintGuru" onclick="printJadwalByGuru()">
+                            <i class="fa-solid fa-print"></i> Cetak Jadwal Guru Ini
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -172,6 +172,30 @@
     </section>
 
     <style>
+        .btn-print {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-print i {
+            font-size: 14px;
+        }
+
         .filter-tabs-wrapper {
             background: white;
             border-radius: 16px;
@@ -372,6 +396,30 @@
 @endsection
 
 <script>
+    function printFullJadwal() {
+        window.open('{{ route('print.full-jadwal') }}', '_blank');
+    }
+
+    function printJadwalByKelas() {
+        const kelasSelect = document.getElementById('kelasSelect');
+        const idKelas = kelasSelect ? kelasSelect.value : '';
+        if (idKelas) {
+            window.open('{{ route('print.jadwal-kelas') }}?id_kelas=' + idKelas, '_blank');
+        } else {
+            alert('Pilih kelas terlebih dahulu');
+        }
+    }
+
+    function printJadwalByGuru() {
+        const guruSelect = document.getElementById('guruSelect');
+        const idGuru = guruSelect ? guruSelect.value : '';
+        if (idGuru) {
+            window.open('{{ route('print.jadwal-guru') }}?id_guru=' + idGuru, '_blank');
+        } else {
+            alert('Pilih guru terlebih dahulu');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Inisialisasi semua event listener
         initFilterButtons();
@@ -768,29 +816,5 @@
         }
 
         container.innerHTML = html;
-    }
-
-    function printFullJadwal() {
-        window.open('{{ route("print.full-jadwal") }}', '_blank');
-    }
-
-    function printJadwalByKelas() {
-        const kelasSelect = document.getElementById('kelasSelect');
-        const idKelas = kelasSelect ? kelasSelect.value : '';
-        if (idKelas) {
-            window.open('{{ route("print.jadwal-kelas") }}?id_kelas=' + idKelas, '_blank');
-        } else {
-            alert('Pilih kelas terlebih dahulu');
-        }
-    }
-
-    function printJadwalByGuru() {
-        const guruSelect = document.getElementById('guruSelect');
-        const idGuru = guruSelect ? guruSelect.value : '';
-        if (idGuru) {
-            window.open('{{ route("print.jadwal-guru") }}?id_guru=' + idGuru, '_blank');
-        } else {
-            alert('Pilih guru terlebih dahulu');
-        }
     }
 </script>

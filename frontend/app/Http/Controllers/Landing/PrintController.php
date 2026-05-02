@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Landing;
 
 use App\Http\Controllers\Controller;
+
+use App\Models\JadwalMaster;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\JadwalMaster;
+use Illuminate\Support\Facades\Log;
 
 class PrintController extends Controller
 {
@@ -20,8 +22,8 @@ class PrintController extends Controller
 
         $fullJadwal = $this->getFullJadwalData($jadwalAktif);
 
-        $pdf = PDF::loadView('pdf.full-jadwal', compact('fullJadwal'));
-        $pdf->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('landing.pdf.full-jadwal', compact('fullJadwal'));
+        $pdf->setPaper('a3', 'landscape');
 
         return $pdf->download('jadwal_lengkap.pdf');
     }
@@ -29,6 +31,20 @@ class PrintController extends Controller
     public function printJadwalByKelas(Request $request)
     {
         $idKelas = $request->input('id_kelas');
+
+        // Jika tidak ada id_kelas, coba cari berdasarkan nama_kelas
+        if (!$idKelas) {
+            $namaKelas = $request->input('nama_kelas');
+            $kelasData = DB::table('kelas')->where('nama_kelas', $namaKelas)->first();
+            if ($kelasData) {
+                $idKelas = $kelasData->id_kelas;
+            }
+        }
+
+        if (!$idKelas) {
+            return redirect()->back()->with('error', 'Pilih kelas terlebih dahulu');
+        }
+
         $jadwalAktif = JadwalMaster::where('aktif', 'aktif')->first();
 
         if (!$jadwalAktif) {
@@ -42,7 +58,10 @@ class PrintController extends Controller
 
         $jadwal = $this->getJadwalByKelasData($jadwalAktif, $kelasData->id_kelas);
 
-        $pdf = PDF::loadView('pdf.jadwal-kelas', compact('jadwal', 'kelasData'));
+        // Debug: cek apakah ada data
+        Log::info('Jadwal Kelas Data:', ['count' => count($jadwal), 'kelas' => $kelasData->nama_kelas]);
+
+        $pdf = Pdf::loadView('landing.pdf.jadwal-kelas', compact('jadwal', 'kelasData'));
         $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('jadwal_kelas_' . $kelasData->nama_kelas . '.pdf');
@@ -51,6 +70,20 @@ class PrintController extends Controller
     public function printJadwalByGuru(Request $request)
     {
         $idGuru = $request->input('id_guru');
+
+        // Jika tidak ada id_guru, coba cari berdasarkan nama_guru
+        if (!$idGuru) {
+            $namaGuru = $request->input('nama_guru');
+            $guruData = DB::table('guru')->where('nama_guru', $namaGuru)->first();
+            if ($guruData) {
+                $idGuru = $guruData->id_guru;
+            }
+        }
+
+        if (!$idGuru) {
+            return redirect()->back()->with('error', 'Pilih guru terlebih dahulu');
+        }
+
         $jadwalAktif = JadwalMaster::where('aktif', 'aktif')->first();
 
         if (!$jadwalAktif) {
@@ -64,7 +97,10 @@ class PrintController extends Controller
 
         $jadwal = $this->getJadwalByGuruData($jadwalAktif, $idGuru);
 
-        $pdf = PDF::loadView('pdf.jadwal-guru', compact('jadwal', 'guruData'));
+        // Debug: cek apakah ada data
+        Log::info('Jadwal Guru Data:', ['count' => count($jadwal), 'guru' => $guruData->nama_guru]);
+
+        $pdf = Pdf::loadView('landing.pdf.jadwal-guru', compact('jadwal', 'guruData'));
         $pdf->setPaper('a4', 'portrait');
 
         return $pdf->download('jadwal_guru_' . $guruData->nama_guru . '.pdf');
@@ -106,7 +142,7 @@ class PrintController extends Controller
         $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
         foreach ($hariList as $hari) {
-            $waktuPerHari = $semuaWaktu->filter(function($w) use ($hari) {
+            $waktuPerHari = $semuaWaktu->filter(function ($w) use ($hari) {
                 return $w->hari == $hari;
             });
 

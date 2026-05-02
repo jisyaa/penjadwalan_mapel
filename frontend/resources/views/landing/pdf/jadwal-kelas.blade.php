@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>Jadwal Kelas {{ $kelasData->nama_kelas }}</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Arial', sans-serif;
             font-size: 11px;
